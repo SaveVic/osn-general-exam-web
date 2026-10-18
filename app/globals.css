@@ -57,6 +57,30 @@
   --radius: 0.5rem;
 }
 
+@media (prefers-color-scheme: dark) {
+  :root {
+    --background: 224 71% 4%; /* slate-950 */
+    --foreground: 210 40% 98%; /* slate-50 */
+    --card: 222 47% 11%; /* slate-900 */
+    --card-foreground: 210 40% 98%;
+    --popover: 222 47% 11%;
+    --popover-foreground: 210 40% 98%;
+    --primary: 243 75% 59%; /* indigo-600 */
+    --primary-foreground: 210 40% 98%;
+    --secondary: 217 33% 17%;
+    --secondary-foreground: 210 40% 98%;
+    --muted: 217 33% 17%;
+    --muted-foreground: 215 20% 65%;
+    --accent: 217 33% 17%;
+    --accent-foreground: 210 40% 98%;
+    --destructive: 0 62.8% 30.6%;
+    --destructive-foreground: 210 40% 98%;
+    --border: 217 33% 17%; /* slate-800 */
+    --input: 217 33% 17%;
+    --ring: 243 75% 59%;
+  }
+}
+
 .dark {
   --background: 224 71% 4%; /* slate-950 */
   --foreground: 210 40% 98%; /* slate-50 */
@@ -87,6 +111,10 @@
     background-color: var(--color-background);
     color: var(--color-foreground);
   }
+  input,
+  textarea {
+    color: inherit;
+  }
 }
 
 /* Tabular numbers for timer and counters */
@@ -102,4 +130,3 @@
   padding: 0.5rem 0;
   max-width: 100%;
 }
-

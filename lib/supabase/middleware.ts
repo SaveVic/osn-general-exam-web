@@ -28,7 +28,9 @@ export async function updateSession(request: NextRequest) {
   );
 
   // Menyegarkan sesi auth pengguna jika ada
-  await supabase.auth.getUser();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
 
-  return supabaseResponse;
+  return { supabaseResponse, user };
 }
