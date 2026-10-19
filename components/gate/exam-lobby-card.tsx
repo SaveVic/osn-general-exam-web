@@ -1,9 +1,12 @@
 "use client";
 
 import { useMemo, useState } from "react";
+import { useRouter } from "next/navigation";
 import { useExamGateStore } from "@/lib/stores/exam-gate-store";
+import { useExamSessionStore } from "@/lib/stores/exam-session-store";
 import { useExamStatusEngine } from "@/hooks/use-exam-status-engine";
 import { lobbyIdentitySchema } from "@/lib/validations/lobby";
+import { startExamSessionAction } from "@/actions/exam-session";
 import { MarkdownRenderer } from "@/components/ui/markdown-renderer";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
@@ -19,6 +22,7 @@ import {
   Clock,
   GraduationCap,
   Hourglass,
+  Loader2,
   RotateCcw,
   ShieldCheck,
   User,
@@ -29,13 +33,17 @@ interface ExamLobbyCardProps {
 }
 
 export function ExamLobbyCard({ verifiedData }: ExamLobbyCardProps) {
+  const router = useRouter();
   const resetGate = useExamGateStore((state) => state.resetGate);
   const studentName = useExamGateStore((state) => state.studentName);
   const studentClass = useExamGateStore((state) => state.studentClass);
   const setStudentName = useExamGateStore((state) => state.setStudentName);
   const setStudentClass = useExamGateStore((state) => state.setStudentClass);
+  const initSession = useExamSessionStore((state) => state.initSession);
 
   const [formAttempted, setFormAttempted] = useState(false);
+  const [isStarting, setIsStarting] = useState(false);
+  const [startError, setStartError] = useState<string | null>(null);
 
   const { exam, referralCode, serverTime } = verifiedData;
 
@@ -75,9 +83,10 @@ export function ExamLobbyCard({ verifiedData }: ExamLobbyCardProps) {
     }
   };
 
-  const handleStartExam = () => {
+  const handleStartExam = async () => {
     setFormAttempted(true);
-    if (!isFormValid) return;
+    setStartError(null);
+    if (!isFormValid || isStarting) return;
 
     // Tahapan validasi Zod
     const validation = lobbyIdentitySchema.safeParse({
@@ -89,7 +98,25 @@ export function ExamLobbyCard({ verifiedData }: ExamLobbyCardProps) {
       return;
     }
 
-    // Siap menghubungkan ke F3-01 (Inisialisasi Sesi Ujian Aman)
+    setIsStarting(true);
+    try {
+      const res = await startExamSessionAction({
+        referralCode,
+        studentName,
+        studentClass,
+      });
+
+      if (res.success && res.data) {
+        initSession(res.data);
+        router.push(`/ujian/${res.data.sessionId}`);
+      } else {
+        setStartError(res.message || "Gagal memulai sesi pengerjaan ujian.");
+        setIsStarting(false);
+      }
+    } catch {
+      setStartError("Terjadi gangguan koneksi ke server saat memulai ujian.");
+      setIsStarting(false);
+    }
   };
 
   return (
@@ -325,6 +352,16 @@ export function ExamLobbyCard({ verifiedData }: ExamLobbyCardProps) {
 
           {/* Footer Tombol Status Dinamis 3-Tahap */}
           <CardFooter className="flex flex-col gap-2.5 border-t border-slate-100 pt-4 dark:border-slate-800">
+            {startError && (
+              <div
+                role="alert"
+                className="w-full flex items-start gap-2.5 rounded-lg border border-rose-200 bg-rose-50 p-3 text-xs text-rose-800 dark:border-rose-900/60 dark:bg-rose-950/40 dark:text-rose-200"
+              >
+                <AlertCircle className="size-4 shrink-0 mt-0.5" />
+                <div className="flex-1 leading-relaxed">{startError}</div>
+              </div>
+            )}
+
             {statusEngine.status === "NOT_STARTED" ? (
               <Button
                 type="button"
@@ -341,12 +378,21 @@ export function ExamLobbyCard({ verifiedData }: ExamLobbyCardProps) {
                 <Button
                   type="button"
                   onClick={handleStartExam}
-                  disabled={!isFormValid}
+                  disabled={!isFormValid || isStarting}
                   className="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-semibold py-6 text-base transition-all disabled:opacity-60 disabled:cursor-not-allowed"
                 >
-                  <ShieldCheck className="mr-2 size-5" />
-                  <span>Mulai Kerjakan Ujian</span>
-                  <ArrowRight className="ml-2 size-5" />
+                  {isStarting ? (
+                    <>
+                      <Loader2 className="mr-2 size-5 animate-spin" />
+                      <span>Menyiapkan Sesi Ujian...</span>
+                    </>
+                  ) : (
+                    <>
+                      <ShieldCheck className="mr-2 size-5" />
+                      <span>Mulai Kerjakan Ujian</span>
+                      <ArrowRight className="ml-2 size-5" />
+                    </>
+                  )}
                 </Button>
                 {!isFormValid && (
                   <p className="text-center text-xs text-slate-500 dark:text-slate-400">
