@@ -4,7 +4,7 @@ import { getExamReferralCodes } from "@/actions/referral-codes";
 import { AdminHeader } from "@/components/admin/admin-header";
 import { ReferralCodeManager } from "@/components/admin/referral-codes/referral-code-manager";
 import { Button } from "@/components/ui/button";
-import { BarChart3, BookOpen, FileEdit, Settings } from "lucide-react";
+import { Activity, BarChart3, BookOpen, FileEdit, Settings } from "lucide-react";
 import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
 
@@ -80,6 +80,12 @@ export default async function ReferralCodesPage({ params }: ReferralCodesPagePro
               <Link href={`/admin/ujian/${exam.id}/laporan`}>
                 <BarChart3 className="size-3.5 text-indigo-600 dark:text-indigo-400" />
                 Laporan Nilai
+              </Link>
+            </Button>
+            <Button asChild variant="outline" size="sm" className="gap-1.5 border-slate-300 text-xs dark:border-slate-700">
+              <Link href={`/admin/ujian/${exam.id}/pemantauan`}>
+                <Activity className="size-3.5 text-indigo-600 dark:text-indigo-400" />
+                Pemantauan Sesi
               </Link>
             </Button>
           </div>

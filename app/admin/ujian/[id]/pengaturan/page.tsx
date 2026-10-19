@@ -5,7 +5,7 @@ import { ExamForm } from "@/components/admin/exam-form";
 import { RecalculateScoresButton } from "@/components/admin/scoring/recalculate-scores-button";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { ArrowLeft, BarChart3, BookOpen, FileEdit, KeyRound, Settings } from "lucide-react";
+import { Activity, ArrowLeft, BarChart3, BookOpen, FileEdit, KeyRound, Settings } from "lucide-react";
 import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
 
@@ -66,6 +66,12 @@ export default async function ExamSettingsPage({ params }: ExamSettingsPageProps
               <Link href={`/admin/ujian/${exam.id}/laporan`}>
                 <BarChart3 className="size-3.5 text-indigo-600 dark:text-indigo-400" />
                 Laporan Nilai
+              </Link>
+            </Button>
+            <Button asChild variant="outline" size="sm" className="gap-1.5 text-xs">
+              <Link href={`/admin/ujian/${exam.id}/pemantauan`}>
+                <Activity className="size-3.5 text-indigo-600 dark:text-indigo-400" />
+                Pemantauan Sesi
               </Link>
             </Button>
             <RecalculateScoresButton examId={exam.id} />
