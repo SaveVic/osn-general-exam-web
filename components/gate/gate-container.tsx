@@ -3,7 +3,7 @@
 import { Suspense } from "react";
 import { useExamGateStore } from "@/lib/stores/exam-gate-store";
 import { ReferralGateCard } from "@/components/gate/referral-gate-card";
-import { VerifiedExamPreview } from "@/components/gate/verified-exam-preview";
+import { ExamLobbyCard } from "@/components/gate/exam-lobby-card";
 import { Card, CardContent } from "@/components/ui/card";
 import { Loader2 } from "lucide-react";
 
@@ -26,7 +26,7 @@ export function GateContainer() {
   return (
     <div className="flex w-full items-center justify-center p-4 sm:p-6 md:p-8">
       {verifiedData ? (
-        <VerifiedExamPreview />
+        <ExamLobbyCard verifiedData={verifiedData} />
       ) : (
         <Suspense fallback={<GateCardSkeleton />}>
           <ReferralGateCard />

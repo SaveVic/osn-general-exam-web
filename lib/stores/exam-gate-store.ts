@@ -6,6 +6,8 @@ interface ExamGateState {
   isVerifying: boolean;
   error: string | null;
   verifiedData: VerifiedGateData | null;
+  studentName: string;
+  studentClass: string;
 }
 
 interface ExamGateActions {
@@ -13,6 +15,9 @@ interface ExamGateActions {
   setVerifying: (isVerifying: boolean) => void;
   setError: (error: string | null) => void;
   setVerifiedData: (data: VerifiedGateData | null) => void;
+  setStudentName: (name: string) => void;
+  setStudentClass: (studentClass: string) => void;
+  resetStudentIdentity: () => void;
   resetGate: () => void;
 }
 
@@ -23,6 +28,8 @@ export const useExamGateStore = create<ExamGateStore>()((set) => ({
   isVerifying: false,
   error: null,
   verifiedData: null,
+  studentName: "",
+  studentClass: "",
 
   setCode: (code) => set({ code, error: null }),
   setVerifying: (isVerifying) => set({ isVerifying }),
@@ -32,13 +39,19 @@ export const useExamGateStore = create<ExamGateStore>()((set) => ({
       verifiedData,
       isVerifying: false,
       error: null,
+      studentName: "",
+      studentClass: "",
     }),
+  setStudentName: (studentName) => set({ studentName }),
+  setStudentClass: (studentClass) => set({ studentClass }),
+  resetStudentIdentity: () => set({ studentName: "", studentClass: "" }),
   resetGate: () =>
     set({
       code: "",
       isVerifying: false,
       error: null,
       verifiedData: null,
+      studentName: "",
+      studentClass: "",
     }),
 }));
-
