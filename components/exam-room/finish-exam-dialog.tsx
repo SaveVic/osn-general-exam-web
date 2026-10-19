@@ -1,0 +1,135 @@
+"use client";
+
+import React from "react";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import { Button } from "@/components/ui/button";
+import { AlertTriangle, CheckCircle2, Flag, HelpCircle, Send } from "lucide-react";
+
+interface FinishExamDialogProps {
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+  totalQuestions: number;
+  answeredCount: number;
+  unansweredCount: number;
+  flaggedCount: number;
+  onConfirmSubmit: () => void;
+}
+
+export function FinishExamDialog({
+  open,
+  onOpenChange,
+  totalQuestions,
+  answeredCount,
+  unansweredCount,
+  flaggedCount,
+  onConfirmSubmit,
+}: FinishExamDialogProps) {
+  const hasIncomplete = unansweredCount > 0 || flaggedCount > 0;
+
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="max-w-md p-6">
+        <DialogHeader className="space-y-2">
+          <div className="flex items-center gap-2 text-slate-900 dark:text-slate-100">
+            <Send className="size-5 text-indigo-600 dark:text-indigo-400" />
+            <DialogTitle className="text-lg font-bold">
+              Konfirmasi Selesai Ujian
+            </DialogTitle>
+          </div>
+          <DialogDescription className="text-xs text-slate-500 dark:text-slate-400">
+            Pastikan seluruh jawaban Anda telah terisi dengan benar sebelum mengumpulkan lembar ujian.
+          </DialogDescription>
+        </DialogHeader>
+
+        {/* Ringkasan Status Soal */}
+        <div className="grid grid-cols-3 gap-2 py-3 text-center">
+          {/* Sudah Dijawab */}
+          <div className="rounded-xl border border-emerald-200 bg-emerald-50/60 p-3 dark:border-emerald-900/60 dark:bg-emerald-950/30">
+            <div className="flex justify-center mb-1 text-emerald-600 dark:text-emerald-400">
+              <CheckCircle2 className="size-4" />
+            </div>
+            <div className="font-mono text-xl font-bold text-emerald-700 dark:text-emerald-300">
+              {answeredCount}
+            </div>
+            <div className="text-[11px] text-slate-600 dark:text-slate-400">
+              Terjawab
+            </div>
+          </div>
+
+          {/* Belum Dijawab */}
+          <div className="rounded-xl border border-rose-200 bg-rose-50/60 p-3 dark:border-rose-900/60 dark:bg-rose-950/30">
+            <div className="flex justify-center mb-1 text-rose-600 dark:text-rose-400">
+              <HelpCircle className="size-4" />
+            </div>
+            <div className="font-mono text-xl font-bold text-rose-700 dark:text-rose-300">
+              {unansweredCount}
+            </div>
+            <div className="text-[11px] text-slate-600 dark:text-slate-400">
+              Kosong
+            </div>
+          </div>
+
+          {/* Bertanda Ragu-ragu */}
+          <div className="rounded-xl border border-amber-200 bg-amber-50/60 p-3 dark:border-amber-900/60 dark:bg-amber-950/30">
+            <div className="flex justify-center mb-1 text-amber-600 dark:text-amber-400">
+              <Flag className="size-4 fill-amber-500" />
+            </div>
+            <div className="font-mono text-xl font-bold text-amber-700 dark:text-amber-300">
+              {flaggedCount}
+            </div>
+            <div className="text-[11px] text-slate-600 dark:text-slate-400">
+              Ragu-ragu
+            </div>
+          </div>
+        </div>
+
+        {/* Peringatan Jika Masih Ada Soal Kosong atau Ragu */}
+        {hasIncomplete ? (
+          <div className="rounded-lg bg-amber-50 p-3 text-xs text-amber-900 dark:bg-amber-950/40 dark:text-amber-200 border border-amber-200 dark:border-amber-900/50 flex items-start gap-2.5">
+            <AlertTriangle className="size-4 shrink-0 text-amber-600 dark:text-amber-400 mt-0.5" />
+            <div className="leading-relaxed">
+              <strong>Perhatian:</strong> Masih terdapat {unansweredCount} butir belum dijawab dan {flaggedCount} butir bertanda ragu-ragu. Setelah dikumpulkan, sesi ujian akan ditutup secara permanen.
+            </div>
+          </div>
+        ) : (
+          <div className="rounded-lg bg-emerald-50 p-3 text-xs text-emerald-900 dark:bg-emerald-950/40 dark:text-emerald-200 border border-emerald-200 dark:border-emerald-900/50 flex items-start gap-2.5">
+            <CheckCircle2 className="size-4 shrink-0 text-emerald-600 dark:text-emerald-400 mt-0.5" />
+            <div className="leading-relaxed">
+              Semua {totalQuestions} butir soal telah berhasil Anda jawab! Anda siap mengumpulkan lembar ujian.
+            </div>
+          </div>
+        )}
+
+        <DialogFooter className="gap-2 sm:gap-0 pt-2">
+          <Button
+            type="button"
+            variant="outline"
+            onClick={() => onOpenChange(false)}
+            className="text-xs"
+          >
+            Kembali Mengerjakan
+          </Button>
+          <Button
+            type="button"
+            onClick={() => {
+              onOpenChange(false);
+              onConfirmSubmit();
+            }}
+            className="bg-emerald-600 hover:bg-emerald-700 text-white text-xs gap-1.5"
+          >
+            <Send className="size-3.5" />
+            <span>Kumpulkan Lembar Jawaban</span>
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  );
+}
+

@@ -32,6 +32,7 @@ export interface ExamSessionActions {
     questions: ClientQuestionItem[];
   }) => void;
   setAnswer: (questionId: string, answerValue: Json) => void;
+  clearAnswer: (questionId: string) => void;
   toggleFlag: (questionId: string) => void;
   setCurrentIndex: (index: number) => void;
   nextQuestion: () => void;
@@ -83,6 +84,15 @@ export const useExamSessionStore = create<ExamSessionStore>()(
             [questionId]: answerValue,
           },
         })),
+
+      clearAnswer: (questionId) =>
+        set((state) => {
+          const nextAnswers = { ...state.answersMap };
+          delete nextAnswers[questionId];
+          return {
+            answersMap: nextAnswers,
+          };
+        }),
 
       toggleFlag: (questionId) =>
         set((state) => ({
