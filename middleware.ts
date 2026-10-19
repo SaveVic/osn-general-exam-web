@@ -33,6 +33,20 @@ export async function middleware(request: NextRequest) {
     return redirectResponse;
   }
 
+  // Proteksi rute ruang ujian peserta (/ujian/* selain /ujian/selesai)
+  if (pathname.startsWith("/ujian") && pathname !== "/ujian/selesai") {
+    const examToken = request.cookies.get("exam_token")?.value;
+    if (!examToken) {
+      const gateUrl = request.nextUrl.clone();
+      gateUrl.pathname = "/";
+      const redirectResponse = NextResponse.redirect(gateUrl);
+      supabaseResponse.cookies.getAll().forEach((cookie) => {
+        redirectResponse.cookies.set(cookie.name, cookie.value, cookie);
+      });
+      return redirectResponse;
+    }
+  }
+
   return supabaseResponse;
 }
 

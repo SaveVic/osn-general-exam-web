@@ -1,6 +1,6 @@
 import { create } from "zustand";
 import { persist, createJSONStorage } from "zustand/middleware";
-import type { ClientQuestionItem } from "@/actions/exam-session";
+import type { ClientQuestionItem, RecoverExamSessionData } from "@/actions/exam-session";
 import type { Json } from "@/types/database";
 
 export type ExamSyncStatus = "local" | "syncing" | "synced" | "error";
@@ -12,6 +12,7 @@ export interface ExamSessionState {
   durationMinutes: number;
   startedAt: string | null;
   serverEndTime: string | null;
+  serverTimeOffsetMs: number;
   studentName: string;
   studentClass: string;
   questions: ClientQuestionItem[];
@@ -32,10 +33,12 @@ export interface ExamSessionActions {
     durationMinutes: number;
     startedAt: string;
     serverEndTime: string;
+    serverTime?: string;
     studentName: string;
     studentClass: string;
     questions: ClientQuestionItem[];
   }) => void;
+  recoverSession: (data: RecoverExamSessionData) => "local_merged" | "remote_restored";
   setAnswer: (questionId: string, answerValue: Json) => void;
   clearAnswer: (questionId: string) => void;
   toggleFlag: (questionId: string) => void;
@@ -63,6 +66,7 @@ export const useExamSessionStore = create<ExamSessionStore>()(
       durationMinutes: 0,
       startedAt: null,
       serverEndTime: null,
+      serverTimeOffsetMs: 0,
       studentName: "",
       studentClass: "",
       questions: [],
@@ -74,7 +78,11 @@ export const useExamSessionStore = create<ExamSessionStore>()(
       lastSyncedAt: null,
       isSubmitted: false,
 
-      initSession: (data) =>
+      initSession: (data) => {
+        const offset = data.serverTime
+          ? new Date(data.serverTime).getTime() - Date.now()
+          : 0;
+
         set({
           sessionId: data.sessionId,
           examId: data.examId,
@@ -82,6 +90,7 @@ export const useExamSessionStore = create<ExamSessionStore>()(
           durationMinutes: data.durationMinutes,
           startedAt: data.startedAt,
           serverEndTime: data.serverEndTime,
+          serverTimeOffsetMs: isNaN(offset) ? 0 : offset,
           studentName: data.studentName,
           studentClass: data.studentClass,
           questions: data.questions,
@@ -92,7 +101,80 @@ export const useExamSessionStore = create<ExamSessionStore>()(
           syncStatus: "synced",
           lastSyncedAt: null,
           isSubmitted: false,
-        }),
+        });
+      },
+
+      recoverSession: (data) => {
+        const state = get();
+        const offset = data.serverTime
+          ? new Date(data.serverTime).getTime() - Date.now()
+          : 0;
+        const serverTimeOffsetMs = isNaN(offset) ? 0 : offset;
+
+        // Skenario A: Data lokal di localStorage ada dan cocok dengan sesi ini
+        const hasMatchingLocalSession =
+          state.sessionId === data.sessionId &&
+          (state.questions.length > 0 ||
+            Object.keys(state.answersMap).length > 0 ||
+            Object.keys(state.flaggedMap).length > 0);
+
+        if (hasMatchingLocalSession) {
+          // Gabungkan jawaban dari server untuk soal yang belum ada di lokal,
+          // namun jangan timpa jawaban lokal yang ada / baru / dikosongkan
+          const mergedAnswers: Record<string, Json> = {
+            ...data.recoveredAnswersMap,
+            ...state.answersMap,
+          };
+
+          const mergedFlagged: Record<string, boolean> = {
+            ...data.recoveredFlaggedMap,
+            ...state.flaggedMap,
+          };
+
+          // Batasi currentIndex agar tetap valid
+          const safeQuestions =
+            data.questions.length > 0 ? data.questions : state.questions;
+          const safeIndex = Math.min(
+            Math.max(0, state.currentIndex),
+            Math.max(0, safeQuestions.length - 1)
+          );
+
+          set({
+            questions: safeQuestions,
+            currentIndex: safeIndex,
+            answersMap: mergedAnswers,
+            flaggedMap: mergedFlagged,
+            serverEndTime: data.serverEndTime,
+            serverTimeOffsetMs,
+            lastSyncedAt: data.lastSyncedAt || state.lastSyncedAt,
+          });
+
+          return "local_merged";
+        }
+
+        // Skenario B: Data lokal hilang / ganti browser / mode samaran / sesi berbeda
+        set({
+          sessionId: data.sessionId,
+          examId: data.examId,
+          examTitle: data.examTitle,
+          durationMinutes: data.durationMinutes,
+          startedAt: data.startedAt,
+          serverEndTime: data.serverEndTime,
+          serverTimeOffsetMs,
+          studentName: data.studentName,
+          studentClass: data.studentClass,
+          questions: data.questions,
+          currentIndex: 0,
+          answersMap: { ...data.recoveredAnswersMap },
+          flaggedMap: { ...data.recoveredFlaggedMap },
+          dirtyQuestionIds: [],
+          syncStatus: "synced",
+          lastSyncedAt: data.lastSyncedAt,
+          isSubmitted: false,
+        });
+
+        return "remote_restored";
+      },
 
       setAnswer: (questionId, answerValue) =>
         set((state) => ({
@@ -170,6 +252,7 @@ export const useExamSessionStore = create<ExamSessionStore>()(
           durationMinutes: 0,
           startedAt: null,
           serverEndTime: null,
+          serverTimeOffsetMs: 0,
           studentName: "",
           studentClass: "",
           questions: [],

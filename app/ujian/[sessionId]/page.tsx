@@ -1,4 +1,4 @@
-import { verifyActiveSessionAction } from "@/actions/exam-session";
+import { recoverExamSessionAction } from "@/actions/exam-session";
 import { ExamRoomShell } from "@/components/exam-room/exam-room-shell";
 import { redirect } from "next/navigation";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -20,10 +20,10 @@ export const metadata = {
 export default async function ExamSessionPage({ params }: ExamSessionPageProps) {
   const { sessionId } = await params;
 
-  const auth = await verifyActiveSessionAction(sessionId);
+  const recovery = await recoverExamSessionAction(sessionId);
 
-  if (!auth.valid) {
-    if (auth.session?.is_completed) {
+  if (!recovery.success || !recovery.data) {
+    if (recovery.isCompleted) {
       return (
         <div className="flex min-h-screen items-center justify-center bg-slate-50 p-4 dark:bg-slate-950">
           <Card className="w-full max-w-md border-slate-200 text-center shadow-sm dark:border-slate-800">
@@ -35,7 +35,7 @@ export default async function ExamSessionPage({ params }: ExamSessionPageProps) 
             </CardHeader>
             <CardContent className="space-y-4 text-xs text-slate-600 dark:text-slate-300">
               <p>
-                Sesi ujian untuk peserta <strong>{auth.session.student_name}</strong> telah berhasil dikumpulkan dan ditutup.
+                Sesi ujian untuk peserta ini telah berhasil dikumpulkan dan ditutup.
               </p>
               <Link href="/" className="block">
                 <Button className="w-full bg-indigo-600 text-white hover:bg-indigo-700">
@@ -48,10 +48,10 @@ export default async function ExamSessionPage({ params }: ExamSessionPageProps) 
       );
     }
 
-    // Jika token tidak valid atau tidak cocok
+    // Jika token tidak valid, sesi tidak ditemukan, atau kedaluwarsa
     redirect("/");
   }
 
-  return <ExamRoomShell sessionId={sessionId} />;
+  return <ExamRoomShell sessionId={sessionId} initialRecoveryData={recovery.data} />;
 }
 

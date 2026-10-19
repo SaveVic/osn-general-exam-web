@@ -6,11 +6,17 @@ import { cn } from "@/lib/utils";
 
 interface ExamTimerProps {
   serverEndTime: string | null;
+  serverTimeOffsetMs?: number;
   onExpire?: () => void;
   className?: string;
 }
 
-export function ExamTimer({ serverEndTime, onExpire, className }: ExamTimerProps) {
+export function ExamTimer({
+  serverEndTime,
+  serverTimeOffsetMs = 0,
+  onExpire,
+  className,
+}: ExamTimerProps) {
   const [secondsRemaining, setSecondsRemaining] = useState<number | null>(null);
   const hasExpiredRef = useRef(false);
 
@@ -23,8 +29,8 @@ export function ExamTimer({ serverEndTime, onExpire, className }: ExamTimerProps
     const targetTime = new Date(serverEndTime).getTime();
 
     const updateTimer = () => {
-      const now = Date.now();
-      const diff = Math.max(0, Math.floor((targetTime - now) / 1000));
+      const syncedNow = Date.now() + serverTimeOffsetMs;
+      const diff = Math.max(0, Math.floor((targetTime - syncedNow) / 1000));
       setSecondsRemaining(diff);
 
       if (diff === 0 && !hasExpiredRef.current) {
@@ -37,7 +43,7 @@ export function ExamTimer({ serverEndTime, onExpire, className }: ExamTimerProps
     const interval = setInterval(updateTimer, 1000);
 
     return () => clearInterval(interval);
-  }, [serverEndTime, onExpire]);
+  }, [serverEndTime, serverTimeOffsetMs, onExpire]);
 
   if (secondsRemaining === null) {
     return (

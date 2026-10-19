@@ -3,6 +3,10 @@
 import { useEffect, useState, useMemo, useCallback } from "react";
 import { useExamSessionStore } from "@/lib/stores/exam-session-store";
 import { useExamSyncEngine } from "@/hooks/use-exam-sync-engine";
+import {
+  recoverExamSessionAction,
+  type RecoverExamSessionData,
+} from "@/actions/exam-session";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -19,10 +23,12 @@ import Link from "next/link";
 
 interface ExamRoomShellProps {
   sessionId: string;
+  initialRecoveryData?: RecoverExamSessionData | null;
 }
 
-export function ExamRoomShell({ sessionId }: ExamRoomShellProps) {
+export function ExamRoomShell({ sessionId, initialRecoveryData }: ExamRoomShellProps) {
   const [isHydrated, setIsHydrated] = useState(false);
+  const [isRecovering, setIsRecovering] = useState(false);
   const [isFinishDialogOpen, setIsFinishDialogOpen] = useState(false);
   const [isPaletteSheetOpen, setIsPaletteSheetOpen] = useState(false);
 
@@ -33,6 +39,7 @@ export function ExamRoomShell({ sessionId }: ExamRoomShellProps) {
   const questions = useExamSessionStore((state) => state.questions);
   const currentIndex = useExamSessionStore((state) => state.currentIndex);
   const serverEndTime = useExamSessionStore((state) => state.serverEndTime);
+  const serverTimeOffsetMs = useExamSessionStore((state) => state.serverTimeOffsetMs);
   const answersMap = useExamSessionStore((state) => state.answersMap);
   const flaggedMap = useExamSessionStore((state) => state.flaggedMap);
   const isSubmitted = useExamSessionStore((state) => state.isSubmitted);
@@ -42,6 +49,7 @@ export function ExamRoomShell({ sessionId }: ExamRoomShellProps) {
   const setCurrentIndex = useExamSessionStore((state) => state.setCurrentIndex);
   const toggleFlag = useExamSessionStore((state) => state.toggleFlag);
   const setSubmitted = useExamSessionStore((state) => state.setSubmitted);
+  const recoverSession = useExamSessionStore((state) => state.recoverSession);
 
   // Mesin sinkronisasi latar belakang F4-01 (Dual-Tier State Sync)
   const { syncStatus, flushSync } = useExamSyncEngine(
@@ -50,8 +58,43 @@ export function ExamRoomShell({ sessionId }: ExamRoomShellProps) {
   );
 
   useEffect(() => {
-    setIsHydrated(true);
-  }, []);
+    let isMounted = true;
+
+    const performHydrationAndRecovery = async () => {
+      if (initialRecoveryData) {
+        recoverSession(initialRecoveryData);
+        if (isMounted) setIsHydrated(true);
+        return;
+      }
+
+      // Jika initialRecoveryData tidak disediakan dan data lokal tidak ada/cocok
+      const currentStoreSessionId = useExamSessionStore.getState().sessionId;
+      if (!currentStoreSessionId || currentStoreSessionId !== sessionId) {
+        setIsRecovering(true);
+        try {
+          const res = await recoverExamSessionAction(sessionId);
+          if (res.success && res.data) {
+            recoverSession(res.data);
+          }
+        } catch (err) {
+          console.error("Gagal memulihkan sesi ujian:", err);
+        } finally {
+          if (isMounted) {
+            setIsRecovering(false);
+            setIsHydrated(true);
+          }
+        }
+      } else {
+        if (isMounted) setIsHydrated(true);
+      }
+    };
+
+    void performHydrationAndRecovery();
+
+    return () => {
+      isMounted = false;
+    };
+  }, [sessionId, initialRecoveryData, recoverSession]);
 
   // Perhitungan statistik pengerjaan
   const totalQuestions = questions.length;
@@ -96,12 +139,16 @@ export function ExamRoomShell({ sessionId }: ExamRoomShellProps) {
     return () => window.removeEventListener("keydown", handleKeyDown);
   }, [handleKeyDown]);
 
-  if (!isHydrated) {
+  if (!isHydrated || isRecovering) {
     return (
       <div className="flex min-h-screen items-center justify-center bg-slate-50 dark:bg-slate-950">
         <div className="space-y-2 text-center">
           <div className="mx-auto size-8 animate-spin rounded-full border-3 border-indigo-600 border-t-transparent" />
-          <p className="text-xs text-slate-500">Memuat lembar ruang ujian...</p>
+          <p className="text-xs text-slate-500">
+            {isRecovering
+              ? "Memulihkan kondisi sesi pengerjaan ujian..."
+              : "Memuat lembar ruang ujian..."}
+          </p>
         </div>
       </div>
     );
@@ -202,6 +249,7 @@ export function ExamRoomShell({ sessionId }: ExamRoomShellProps) {
           <div className="shrink-0">
             <ExamTimer
               serverEndTime={serverEndTime}
+              serverTimeOffsetMs={serverTimeOffsetMs}
               onExpire={() => setIsFinishDialogOpen(true)}
             />
           </div>

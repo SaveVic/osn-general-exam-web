@@ -31,6 +31,7 @@ export interface StartExamSessionResult {
     durationMinutes: number;
     startedAt: string;
     serverEndTime: string;
+    serverTime?: string;
     studentName: string;
     studentClass: string;
     questions: ClientQuestionItem[];
@@ -211,6 +212,7 @@ export async function startExamSessionAction(
         durationMinutes: exam.duration_minutes,
         startedAt: session.started_at,
         serverEndTime,
+        serverTime: now.toISOString(),
         studentName,
         studentClass,
         questions: (questionsData || []) as ClientQuestionItem[],
@@ -395,5 +397,135 @@ export async function syncBatchAnswersAction(
 }
 
 export { syncBatchAnswersAction as syncBatchAnswers };
+
+export interface RecoverExamSessionData {
+  sessionId: string;
+  examId: string;
+  examTitle: string;
+  durationMinutes: number;
+  startedAt: string;
+  serverEndTime: string;
+  serverTime: string;
+  studentName: string;
+  studentClass: string;
+  questions: ClientQuestionItem[];
+  recoveredAnswersMap: Record<string, Json>;
+  recoveredFlaggedMap: Record<string, boolean>;
+  lastSyncedAt: string | null;
+}
+
+export interface RecoverExamSessionResult {
+  success: boolean;
+  message?: string;
+  isCompleted?: boolean;
+  data?: RecoverExamSessionData;
+}
+
+/**
+ * Server Action F4-02 (EXM-RECV-01):
+ * Memulihkan kondisi pengerjaan peserta dari database Supabase (questions & session_answers)
+ * setelah tab browser tertutup, reload, atau perangkat mati mendadak.
+ */
+export async function recoverExamSessionAction(
+  sessionId: string
+): Promise<RecoverExamSessionResult> {
+  try {
+    const authResult = await verifyActiveSessionAction(sessionId);
+    if (!authResult.valid || !authResult.session) {
+      return {
+        success: false,
+        message: authResult.message || "Sesi ujian tidak valid atau token tidak cocok.",
+        isCompleted: authResult.session?.is_completed,
+      };
+    }
+
+    const { session, exam } = authResult;
+    const now = new Date();
+    const nowIso = now.toISOString();
+
+    const startedMs = new Date(session.started_at).getTime();
+    const durationMs = (exam?.duration_minutes ?? 90) * 60 * 1000;
+    const examEndMs = exam ? new Date(exam.ends_at).getTime() : startedMs + durationMs;
+    const serverEndTime = new Date(Math.min(startedMs + durationMs, examEndMs)).toISOString();
+
+    const supabase = createServiceClient();
+
+    // 1. Ambil daftar butir soal tanpa kunci jawaban (CRUCIAL SECURITY FILTER)
+    const { data: questionsData, error: questionsError } = await supabase
+      .from("questions")
+      .select("id, exam_id, order_index, question_type, prompt, options, points")
+      .eq("exam_id", session.exam_id)
+      .order("order_index", { ascending: true });
+
+    if (questionsError) {
+      console.error("Gagal mengambil butir soal saat pemulihan sesi:", questionsError.message);
+      return {
+        success: false,
+        message: "Terjadi kesalahan saat memulihkan lembar soal ujian.",
+      };
+    }
+
+    // 2. Ambil seluruh jawaban dan status flag yang telah tersinkronisasi di session_answers
+    const { data: answersData, error: answersError } = await supabase
+      .from("session_answers")
+      .select("question_id, answer_value, is_flagged, last_updated_at")
+      .eq("session_id", sessionId);
+
+    if (answersError) {
+      console.error("Gagal mengambil session_answers saat pemulihan sesi:", answersError.message);
+      return {
+        success: false,
+        message: "Terjadi kesalahan saat memulihkan jawaban tersimpan.",
+      };
+    }
+
+    const recoveredAnswersMap: Record<string, Json> = {};
+    const recoveredFlaggedMap: Record<string, boolean> = {};
+    let latestSyncedAt: string | null = null;
+
+    if (Array.isArray(answersData)) {
+      for (const row of answersData) {
+        if (row.answer_value !== null && row.answer_value !== undefined) {
+          recoveredAnswersMap[row.question_id] = row.answer_value as Json;
+        }
+        if (row.is_flagged) {
+          recoveredFlaggedMap[row.question_id] = true;
+        }
+        if (row.last_updated_at) {
+          if (!latestSyncedAt || new Date(row.last_updated_at).getTime() > new Date(latestSyncedAt).getTime()) {
+            latestSyncedAt = row.last_updated_at;
+          }
+        }
+      }
+    }
+
+    return {
+      success: true,
+      data: {
+        sessionId: session.id,
+        examId: session.exam_id,
+        examTitle: exam?.title ?? "Ujian",
+        durationMinutes: exam?.duration_minutes ?? 90,
+        startedAt: session.started_at,
+        serverEndTime,
+        serverTime: nowIso,
+        studentName: session.student_name,
+        studentClass: session.student_class,
+        questions: (questionsData || []) as ClientQuestionItem[],
+        recoveredAnswersMap,
+        recoveredFlaggedMap,
+        lastSyncedAt: latestSyncedAt,
+      },
+    };
+  } catch (err) {
+    console.error("Kesalahan internal saat memulihkan sesi ujian:", err);
+    return {
+      success: false,
+      message: "Terjadi kesalahan sistem saat memulihkan sesi ujian.",
+    };
+  }
+}
+
+export { recoverExamSessionAction as recoverExamSession };
 
 
