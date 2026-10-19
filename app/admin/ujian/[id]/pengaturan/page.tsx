@@ -5,7 +5,7 @@ import { ExamForm } from "@/components/admin/exam-form";
 import { RecalculateScoresButton } from "@/components/admin/scoring/recalculate-scores-button";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { ArrowLeft, BookOpen, KeyRound, Settings } from "lucide-react";
+import { ArrowLeft, BookOpen, FileEdit, KeyRound, Settings } from "lucide-react";
 import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
 
@@ -54,6 +54,12 @@ export default async function ExamSettingsPage({ params }: ExamSettingsPageProps
               <Link href={`/admin/ujian/${exam.id}/kode-rujukan`}>
                 <KeyRound className="size-3.5 text-amber-600 dark:text-amber-400" />
                 Kode Rujukan
+              </Link>
+            </Button>
+            <Button asChild variant="outline" size="sm" className="gap-1.5 text-xs">
+              <Link href={`/admin/ujian/${exam.id}/penilaian`}>
+                <FileEdit className="size-3.5 text-emerald-600 dark:text-emerald-400" />
+                Penilaian Manual
               </Link>
             </Button>
             <RecalculateScoresButton examId={exam.id} />
