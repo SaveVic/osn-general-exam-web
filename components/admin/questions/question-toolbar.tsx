@@ -13,6 +13,7 @@ import {
   FunctionSquare,
   Divide,
   ChevronDown,
+  ImageIcon,
 } from "lucide-react";
 import {
   Popover,
@@ -22,6 +23,7 @@ import {
 
 interface QuestionToolbarProps {
   onInsert: (prefix: string, suffix?: string, defaultPlaceholder?: string) => void;
+  onOpenImageModal?: () => void;
   disabled?: boolean;
 }
 
@@ -50,7 +52,11 @@ const MATH_SYMBOLS = [
   { label: "O(N²)", tex: "O(N^2)" },
 ];
 
-export function QuestionToolbar({ onInsert, disabled = false }: QuestionToolbarProps) {
+export function QuestionToolbar({
+  onInsert,
+  onOpenImageModal,
+  disabled = false,
+}: QuestionToolbarProps) {
   return (
     <div className="flex flex-wrap items-center gap-1 rounded-t-lg border border-b-0 border-slate-200 bg-slate-50 p-1.5 dark:border-slate-800 dark:bg-slate-900/60">
       {/* Format Teks */}
@@ -273,6 +279,24 @@ export function QuestionToolbar({ onInsert, disabled = false }: QuestionToolbarP
           <span className="hidden sm:inline">Tabel</span>
         </Button>
       </div>
+
+      {/* Unggah Diagram Gambar */}
+      {onOpenImageModal && (
+        <div className="flex items-center gap-0.5 pl-1.5 border-l border-slate-200 dark:border-slate-800">
+          <Button
+            type="button"
+            variant="ghost"
+            size="sm"
+            disabled={disabled}
+            onClick={onOpenImageModal}
+            title="Unggah / Pilih Diagram Gambar"
+            className="h-8 gap-1 px-1.5 text-xs font-semibold text-indigo-600 hover:bg-indigo-50 dark:text-indigo-400 dark:hover:bg-indigo-950/40"
+          >
+            <ImageIcon className="size-3.5" />
+            <span>Diagram</span>
+          </Button>
+        </div>
+      )}
     </div>
   );
 }

@@ -4,7 +4,9 @@ import React, { useState, useRef } from "react";
 import type { QuestionRow, QuestionType } from "@/types/database";
 import type { ChoiceOption, QuestionInput } from "@/lib/validations/question";
 import { createQuestionAction, updateQuestionAction } from "@/actions/questions";
+import { uploadExamAssetAction } from "@/actions/storage";
 import { QuestionToolbar } from "./question-toolbar";
+import { ImageUploadModal } from "./image-upload-modal";
 import { MarkdownRenderer } from "@/components/ui/markdown-renderer";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -122,6 +124,66 @@ export function QuestionEditor({
       const cursorEnd = cursorStart + textToInsert.length;
       textarea.setSelectionRange(cursorStart, cursorEnd);
     }, 0);
+  };
+
+  // State untuk modal gambar & drag-and-drop
+  const [isImageModalOpen, setIsImageModalOpen] = useState(false);
+  const [isTextareaDragging, setIsTextareaDragging] = useState(false);
+  const [isUploadingDroppedFile, setIsUploadingDroppedFile] = useState(false);
+
+  // Injeksi sintaks gambar markdown
+  const handleInsertImage = (url: string, altText: string) => {
+    handleInsert(`\n![${altText || "Diagram"}](${url})\n`, "", "");
+  };
+
+  // Drag and drop gambar langsung ke textarea
+  const handleTextareaDragOver = (e: React.DragEvent<HTMLTextAreaElement>) => {
+    e.preventDefault();
+    setIsTextareaDragging(true);
+  };
+
+  const handleTextareaDragLeave = (e: React.DragEvent<HTMLTextAreaElement>) => {
+    e.preventDefault();
+    setIsTextareaDragging(false);
+  };
+
+  const handleTextareaDrop = async (e: React.DragEvent<HTMLTextAreaElement>) => {
+    e.preventDefault();
+    setIsTextareaDragging(false);
+
+    if (e.dataTransfer.files && e.dataTransfer.files.length > 0) {
+      const droppedFile = e.dataTransfer.files[0];
+      const allowed = ["image/png", "image/jpeg", "image/jpg", "image/webp", "image/svg+xml"];
+      if (!allowed.includes(droppedFile.type)) {
+        setErrorMessage("Format berkas tidak didukung. Harap seret gambar PNG, JPG, WebP, atau SVG.");
+        return;
+      }
+      if (droppedFile.size > 2 * 1024 * 1024) {
+        setErrorMessage("Ukuran berkas melebihi batas maksimal 2 MB.");
+        return;
+      }
+
+      setIsUploadingDroppedFile(true);
+      setErrorMessage(null);
+
+      const formData = new FormData();
+      formData.append("file", droppedFile);
+      formData.append("alt_text", droppedFile.name.replace(/\.[^/.]+$/, ""));
+
+      try {
+        const result = await uploadExamAssetAction(examId, formData);
+        if (result.success && result.url) {
+          handleInsertImage(result.url, result.altText || "Diagram");
+        } else {
+          setErrorMessage(result.message || "Gagal mengunggah berkas gambar yang diseret.");
+        }
+      } catch (err: unknown) {
+        const msg = err instanceof Error ? err.message : "Gagal mengunggah berkas gambar.";
+        setErrorMessage(msg);
+      } finally {
+        setIsUploadingDroppedFile(false);
+      }
+    }
   };
 
   // Handler Opsi Jawaban
@@ -346,16 +408,38 @@ export function QuestionEditor({
             </div>
 
             <div className="rounded-lg shadow-xs">
-              <QuestionToolbar onInsert={handleInsert} disabled={isPending} />
-              <textarea
-                ref={textareaRef}
-                value={prompt}
-                onChange={(e) => setPrompt(e.target.value)}
-                rows={9}
-                disabled={isPending}
-                placeholder="Tuliskan butir soal di sini..."
-                className="w-full rounded-b-lg border border-slate-200 bg-white p-3 font-mono text-sm leading-relaxed text-slate-900 placeholder:text-slate-400 focus:border-indigo-600 focus:outline-hidden dark:border-slate-800 dark:bg-slate-950 dark:text-slate-50"
+              <QuestionToolbar
+                onInsert={handleInsert}
+                onOpenImageModal={() => setIsImageModalOpen(true)}
+                disabled={isPending || isUploadingDroppedFile}
               />
+              <div className="relative">
+                <textarea
+                  ref={textareaRef}
+                  value={prompt}
+                  onChange={(e) => setPrompt(e.target.value)}
+                  onDragOver={handleTextareaDragOver}
+                  onDragLeave={handleTextareaDragLeave}
+                  onDrop={handleTextareaDrop}
+                  rows={9}
+                  disabled={isPending || isUploadingDroppedFile}
+                  placeholder="Tuliskan butir soal di sini (seret & lepas gambar langsung ke sini untuk unggah otomatis)..."
+                  className={cn(
+                    "w-full rounded-b-lg border border-slate-200 bg-white p-3 font-mono text-sm leading-relaxed text-slate-900 placeholder:text-slate-400 focus:border-indigo-600 focus:outline-hidden dark:border-slate-800 dark:bg-slate-950 dark:text-slate-50 transition-colors",
+                    isTextareaDragging &&
+                      "border-indigo-500 bg-indigo-50/40 ring-2 ring-indigo-500/30 dark:bg-indigo-950/30"
+                  )}
+                />
+
+                {isUploadingDroppedFile && (
+                  <div className="absolute inset-0 flex items-center justify-center rounded-b-lg bg-white/80 backdrop-blur-2xs dark:bg-slate-950/80">
+                    <div className="flex items-center gap-2 rounded-lg bg-slate-900 px-3 py-1.5 text-xs font-medium text-white shadow-lg dark:bg-slate-100 dark:text-slate-900">
+                      <Loader2 className="size-3.5 animate-spin text-indigo-400" />
+                      <span>Mengunggah diagram ke Supabase Storage...</span>
+                    </div>
+                  </div>
+                )}
+              </div>
             </div>
             {fieldErrors.prompt && (
               <p className="text-xs text-destructive">{fieldErrors.prompt[0]}</p>
@@ -630,6 +714,14 @@ export function QuestionEditor({
           </div>
         </div>
       </div>
+
+      {/* Modal Unggah & Galeri Diagram Visual */}
+      <ImageUploadModal
+        open={isImageModalOpen}
+        onOpenChange={setIsImageModalOpen}
+        examId={examId}
+        onInsertImage={handleInsertImage}
+      />
     </div>
   );
 }
