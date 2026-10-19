@@ -271,9 +271,9 @@ export function QuestionEditor({
   };
 
   return (
-    <div className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm dark:border-slate-800 dark:bg-slate-900 sm:p-6">
+    <div className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm sm:p-6 dark:border-slate-800 dark:bg-slate-900">
       {/* Header Editor */}
-      <div className="mb-6 flex flex-col gap-4 border-b border-slate-200 pb-4 dark:border-slate-800 sm:flex-row sm:items-center sm:justify-between">
+      <div className="mb-6 flex flex-col gap-4 border-b border-slate-200 pb-4 sm:flex-row sm:items-center sm:justify-between dark:border-slate-800">
         <div>
           <h2 className="text-lg font-bold text-slate-900 dark:text-slate-50">
             {isEdit
@@ -324,7 +324,7 @@ export function QuestionEditor({
       {/* Baris Konfigurasi: Tipe Soal & Bobot Poin */}
       <div className="mb-6 grid grid-cols-1 gap-4 sm:grid-cols-3">
         {/* Pilihan Tipe Pertanyaan */}
-        <div className="sm:col-span-2 space-y-1.5">
+        <div className="space-y-1.5 sm:col-span-2">
           <label className="text-xs font-semibold tracking-wider text-slate-700 uppercase dark:text-slate-300">
             Tipe Pertanyaan <span className="text-destructive">*</span>
           </label>
@@ -335,7 +335,7 @@ export function QuestionEditor({
               className={cn(
                 "flex items-center justify-center gap-1.5 rounded-lg border p-2.5 text-xs font-medium transition-colors",
                 questionType === "single_choice"
-                  ? "border-indigo-600 bg-indigo-50/70 text-indigo-700 font-semibold dark:border-indigo-500 dark:bg-indigo-950/40 dark:text-indigo-300"
+                  ? "border-indigo-600 bg-indigo-50/70 font-semibold text-indigo-700 dark:border-indigo-500 dark:bg-indigo-950/40 dark:text-indigo-300"
                   : "border-slate-200 text-slate-600 hover:bg-slate-50 dark:border-slate-800 dark:text-slate-400 dark:hover:bg-slate-800"
               )}
             >
@@ -348,7 +348,7 @@ export function QuestionEditor({
               className={cn(
                 "flex items-center justify-center gap-1.5 rounded-lg border p-2.5 text-xs font-medium transition-colors",
                 questionType === "multiple_choice"
-                  ? "border-indigo-600 bg-indigo-50/70 text-indigo-700 font-semibold dark:border-indigo-500 dark:bg-indigo-950/40 dark:text-indigo-300"
+                  ? "border-indigo-600 bg-indigo-50/70 font-semibold text-indigo-700 dark:border-indigo-500 dark:bg-indigo-950/40 dark:text-indigo-300"
                   : "border-slate-200 text-slate-600 hover:bg-slate-50 dark:border-slate-800 dark:text-slate-400 dark:hover:bg-slate-800"
               )}
             >
@@ -361,7 +361,7 @@ export function QuestionEditor({
               className={cn(
                 "flex items-center justify-center gap-1.5 rounded-lg border p-2.5 text-xs font-medium transition-colors",
                 questionType === "short_answer"
-                  ? "border-indigo-600 bg-indigo-50/70 text-indigo-700 font-semibold dark:border-indigo-500 dark:bg-indigo-950/40 dark:text-indigo-300"
+                  ? "border-indigo-600 bg-indigo-50/70 font-semibold text-indigo-700 dark:border-indigo-500 dark:bg-indigo-950/40 dark:text-indigo-300"
                   : "border-slate-200 text-slate-600 hover:bg-slate-50 dark:border-slate-800 dark:text-slate-400 dark:hover:bg-slate-800"
               )}
             >
@@ -425,14 +425,14 @@ export function QuestionEditor({
                   disabled={isPending || isUploadingDroppedFile}
                   placeholder="Tuliskan butir soal di sini (seret & lepas gambar langsung ke sini untuk unggah otomatis)..."
                   className={cn(
-                    "w-full rounded-b-lg border border-slate-200 bg-white p-3 font-mono text-sm leading-relaxed text-slate-900 placeholder:text-slate-400 focus:border-indigo-600 focus:outline-hidden dark:border-slate-800 dark:bg-slate-950 dark:text-slate-50 transition-colors",
+                    "w-full rounded-b-lg border border-slate-200 bg-white p-3 font-mono text-sm leading-relaxed text-slate-900 transition-colors placeholder:text-slate-400 focus:border-indigo-600 focus:outline-hidden dark:border-slate-800 dark:bg-slate-950 dark:text-slate-50",
                     isTextareaDragging &&
                       "border-indigo-500 bg-indigo-50/40 ring-2 ring-indigo-500/30 dark:bg-indigo-950/30"
                   )}
                 />
 
                 {isUploadingDroppedFile && (
-                  <div className="absolute inset-0 flex items-center justify-center rounded-b-lg bg-white/80 backdrop-blur-2xs dark:bg-slate-950/80">
+                  <div className="absolute inset-0 flex items-center justify-center rounded-b-lg bg-white/80 backdrop-blur-xs dark:bg-slate-950/80">
                     <div className="flex items-center gap-2 rounded-lg bg-slate-900 px-3 py-1.5 text-xs font-medium text-white shadow-lg dark:bg-slate-100 dark:text-slate-900">
                       <Loader2 className="size-3.5 animate-spin text-indigo-400" />
                       <span>Mengunggah diagram ke Supabase Storage...</span>
@@ -449,7 +449,7 @@ export function QuestionEditor({
           {/* Editor Opsi & Kunci Jawaban */}
           {questionType === "short_answer" ? (
             /* Input Isian Singkat */
-            <div className="rounded-lg border border-slate-200 bg-slate-50/60 p-4 space-y-4 dark:border-slate-800 dark:bg-slate-900/40">
+            <div className="space-y-4 rounded-lg border border-slate-200 bg-slate-50/60 p-4 dark:border-slate-800 dark:bg-slate-900/40">
               <div className="flex items-center gap-2">
                 <HelpCircle className="size-4 text-indigo-600 dark:text-indigo-400" />
                 <h3 className="text-xs font-semibold tracking-wider text-slate-700 uppercase dark:text-slate-300">
@@ -537,7 +537,7 @@ export function QuestionEditor({
                   size="sm"
                   onClick={handleAddOption}
                   disabled={isPending || options.length >= 10}
-                  className="h-7 text-xs border-slate-300 dark:border-slate-700"
+                  className="h-7 border-slate-300 text-xs dark:border-slate-700"
                 >
                   <Plus className="mr-1 size-3" />
                   Tambah Opsi
@@ -589,7 +589,7 @@ export function QuestionEditor({
                           onClick={() => handleToggleMultiCorrect(opt.id)}
                           title="Tandai sebagai salah satu kunci jawaban benar"
                           className={cn(
-                            "flex size-7 shrink-0 items-center justify-center rounded-md border transition-all font-mono text-xs font-bold",
+                            "flex size-7 shrink-0 items-center justify-center rounded-md border font-mono text-xs font-bold transition-all",
                             isCorrect
                               ? "border-emerald-600 bg-emerald-600 text-white dark:border-emerald-500 dark:bg-emerald-500"
                               : "border-slate-300 bg-white text-slate-500 hover:border-emerald-500 dark:border-slate-700 dark:bg-slate-800"
@@ -606,7 +606,7 @@ export function QuestionEditor({
                         onChange={(e) => handleOptionTextChange(index, e.target.value)}
                         placeholder={`Isi pilihan ${opt.id} (mendukung formula $...$)`}
                         disabled={isPending}
-                        className="h-9 text-xs sm:text-sm font-sans"
+                        className="h-9 font-sans text-xs sm:text-sm"
                         required
                       />
 
@@ -631,7 +631,7 @@ export function QuestionEditor({
         </div>
 
         {/* PANEL KANAN: Pratinjau Presisi (Live Preview) */}
-        <div className="lg:sticky lg:top-4 space-y-3">
+        <div className="space-y-3 lg:sticky lg:top-4">
           <div className="flex items-center justify-between">
             <span className="text-xs font-semibold tracking-wider text-slate-700 uppercase dark:text-slate-300">
               Pratinjau Tampilan Peserta
@@ -698,7 +698,7 @@ export function QuestionEditor({
                       <div className="flex-1 pt-0.5">
                         <MarkdownRenderer
                           content={opt.text || `*(Pilihan ${opt.id} kosong)*`}
-                          className="prose-p:my-0 text-sm"
+                          className="text-sm prose-p:my-0"
                         />
                       </div>
                       {isCorrect && (

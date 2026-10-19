@@ -26,7 +26,7 @@ export function MultipleChoiceInput({
   return (
     <div className="space-y-3">
       {/* Petunjuk Pilihan Jamak */}
-      <div className="flex items-center gap-2 px-3 py-2 rounded-lg bg-indigo-50/60 dark:bg-indigo-950/30 border border-indigo-100 dark:border-indigo-900/50 text-xs text-indigo-800 dark:text-indigo-200">
+      <div className="flex items-center gap-2 rounded-lg border border-indigo-100 bg-indigo-50/60 px-3 py-2 text-xs text-indigo-800 dark:border-indigo-900/50 dark:bg-indigo-950/30 dark:text-indigo-200">
         <Info className="size-4 shrink-0 text-indigo-600 dark:text-indigo-400" />
         <span>Pilihan Jamak: Anda dapat memilih satu atau lebih jawaban yang menurut Anda benar.</span>
       </div>
@@ -43,33 +43,33 @@ export function MultipleChoiceInput({
               aria-checked={isSelected}
               onClick={() => onToggleOption(option.id)}
               className={cn(
-                "w-full text-left flex items-start gap-3 sm:gap-4 p-3.5 sm:p-4 rounded-xl border transition-all duration-150 cursor-pointer select-none",
-                "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 focus-visible:ring-offset-2",
+                "flex w-full cursor-pointer items-start gap-3 rounded-xl border p-3.5 text-left transition-all duration-150 select-none sm:gap-4 sm:p-4",
+                "focus-visible:ring-2 focus-visible:ring-indigo-500 focus-visible:ring-offset-2 focus-visible:outline-none",
                 isSelected
-                  ? "border-indigo-600 bg-indigo-50/70 dark:border-indigo-500 dark:bg-indigo-950/40 shadow-xs ring-1 ring-indigo-600/30 dark:ring-indigo-500/30"
-                  : "border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900/60 hover:border-indigo-300 dark:hover:border-indigo-700 hover:bg-slate-50/60 dark:hover:bg-slate-900"
+                  ? "border-indigo-600 bg-indigo-50/70 shadow-xs ring-1 ring-indigo-600/30 dark:border-indigo-500 dark:bg-indigo-950/40 dark:ring-indigo-500/30"
+                  : "border-slate-200 bg-white hover:border-indigo-300 hover:bg-slate-50/60 dark:border-slate-800 dark:bg-slate-900/60 dark:hover:border-indigo-700 dark:hover:bg-slate-900"
               )}
             >
               {/* Badge Kotak Centang (A, B, C, D, E) */}
               <div
                 className={cn(
-                  "size-8 sm:size-9 rounded-lg flex items-center justify-center font-bold text-sm shrink-0 transition-colors",
+                  "flex size-8 shrink-0 items-center justify-center rounded-lg text-sm font-bold transition-colors sm:size-9",
                   isSelected
                     ? "bg-indigo-600 text-white shadow-xs"
-                    : "bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-300 border border-slate-200 dark:border-slate-700"
+                    : "border border-slate-200 bg-slate-100 text-slate-700 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-300"
                 )}
               >
-                {isSelected ? <Check className="size-4 stroke-[3]" /> : option.id}
+                {isSelected ? <Check className="size-4 stroke-3" /> : option.id}
               </div>
 
               {/* Teks Opsi Jawaban (Render Markdown & KaTeX) */}
-              <div className="flex-1 min-w-0 pt-0.5">
+              <div className="min-w-0 flex-1 pt-0.5">
                 <MarkdownRenderer
                   content={option.text}
                   className={cn(
-                    "prose-p:my-0 text-sm sm:text-base leading-relaxed break-words",
+                    "text-sm leading-relaxed wrap-break-word sm:text-base prose-p:my-0",
                     isSelected
-                      ? "text-indigo-950 dark:text-indigo-100 font-medium"
+                      ? "font-medium text-indigo-950 dark:text-indigo-100"
                       : "text-slate-800 dark:text-slate-200"
                   )}
                 />
@@ -87,7 +87,7 @@ export function MultipleChoiceInput({
             variant="ghost"
             size="sm"
             onClick={onClearOptions}
-            className="text-xs text-slate-500 hover:text-rose-600 dark:text-slate-400 dark:hover:text-rose-400 gap-1.5 h-8 px-2.5"
+            className="h-8 gap-1.5 px-2.5 text-xs text-slate-500 hover:text-rose-600 dark:text-slate-400 dark:hover:text-rose-400"
           >
             <RotateCcw className="size-3.5" />
             <span>Hapus Semua Pilihan ({selectedOptionIds.length} Terpilih)</span>

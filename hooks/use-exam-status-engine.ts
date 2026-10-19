@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 
 export type ExamStatusPhase = "NOT_STARTED" | "IN_PROGRESS" | "ENDED";
 
@@ -65,7 +65,7 @@ export function useExamStatusEngine({
   const endMs = new Date(endsAt).getTime();
 
   // Fungsi evaluasi status waktu saat ini
-  const evaluateCurrentStatus = (): ExamStatusEngineResult => {
+  const evaluateCurrentStatus = useCallback((): ExamStatusEngineResult => {
     const currentServerMs = Date.now() + offsetRef.current;
     const serverTimeNow = new Date(currentServerMs);
 
@@ -95,7 +95,7 @@ export function useExamStatusEngine({
       msRemaining: 0,
       serverTimeNow,
     };
-  };
+  }, [startMs, endMs]);
 
   const [engineState, setEngineState] = useState<ExamStatusEngineResult>(evaluateCurrentStatus);
 
@@ -109,7 +109,7 @@ export function useExamStatusEngine({
     }, 500);
 
     return () => clearInterval(interval);
-  }, [startsAt, endsAt, serverTime]);
+  }, [evaluateCurrentStatus]);
 
   return engineState;
 }

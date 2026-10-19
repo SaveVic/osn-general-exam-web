@@ -80,7 +80,7 @@ export function ClassOptionsInput({
       {/* Chip/Tags Container */}
       <div className="flex flex-wrap gap-2">
         {classes.length === 0 ? (
-          <p className="text-xs italic text-slate-400 dark:text-slate-500">
+          <p className="text-xs text-slate-400 italic dark:text-slate-500">
             Belum ada opsi kelas. Tambahkan minimal 1 kelas agar peserta dapat memilih.
           </p>
         ) : (

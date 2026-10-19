@@ -32,7 +32,7 @@ export function BottomNavigationBar({
   return (
     <footer
       className={cn(
-        "sticky bottom-0 z-20 border-t border-slate-200 bg-white/95 backdrop-blur-md px-4 py-3 sm:py-3.5 dark:border-slate-800 dark:bg-slate-900/95 shadow-md",
+        "sticky bottom-0 z-20 border-t border-slate-200 bg-white/95 px-4 py-3 shadow-md backdrop-blur-md sm:py-3.5 dark:border-slate-800 dark:bg-slate-900/95",
         className
       )}
     >
@@ -44,7 +44,7 @@ export function BottomNavigationBar({
           size="default"
           onClick={onPrev}
           disabled={isFirst}
-          className="border-slate-300 dark:border-slate-700 text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 gap-1.5 h-10 px-3 sm:px-4"
+          className="h-10 gap-1.5 border-slate-300 px-3 text-slate-700 hover:bg-slate-100 sm:px-4 dark:border-slate-700 dark:text-slate-200 dark:hover:bg-slate-800"
         >
           <ChevronLeft className="size-4" />
           <span className="hidden sm:inline">Soal Sebelumnya</span>
@@ -58,10 +58,10 @@ export function BottomNavigationBar({
           size="default"
           onClick={onToggleFlag}
           className={cn(
-            "transition-all gap-1.5 h-10 px-3 sm:px-5 font-medium select-none",
+            "h-10 gap-1.5 px-3 font-medium transition-all select-none sm:px-5",
             isFlagged
-              ? "bg-amber-500 hover:bg-amber-600 text-white border-amber-600 dark:border-amber-500 shadow-xs"
-              : "border-slate-300 dark:border-slate-700 text-slate-700 dark:text-slate-300 hover:border-amber-400 hover:bg-amber-50/50 hover:text-amber-700 dark:hover:bg-amber-950/30 dark:hover:text-amber-300"
+              ? "border-amber-600 bg-amber-500 text-white shadow-xs hover:bg-amber-600 dark:border-amber-500"
+              : "border-slate-300 text-slate-700 hover:border-amber-400 hover:bg-amber-50/50 hover:text-amber-700 dark:border-slate-700 dark:text-slate-300 dark:hover:bg-amber-950/30 dark:hover:text-amber-300"
           )}
         >
           <Flag className={cn("size-4", isFlagged && "fill-white")} />
@@ -75,7 +75,7 @@ export function BottomNavigationBar({
             type="button"
             size="default"
             onClick={onRequestFinish}
-            className="bg-emerald-600 hover:bg-emerald-700 text-white gap-1.5 h-10 px-3 sm:px-5 shadow-xs"
+            className="h-10 gap-1.5 bg-emerald-600 px-3 text-white shadow-xs hover:bg-emerald-700 sm:px-5"
           >
             <span className="hidden sm:inline">Selesaikan Ujian</span>
             <span className="sm:hidden">Selesai</span>
@@ -86,7 +86,7 @@ export function BottomNavigationBar({
             type="button"
             size="default"
             onClick={onNext}
-            className="bg-indigo-600 hover:bg-indigo-700 text-white gap-1.5 h-10 px-3 sm:px-5 shadow-xs"
+            className="h-10 gap-1.5 bg-indigo-600 px-3 text-white shadow-xs hover:bg-indigo-700 sm:px-5"
           >
             <span className="hidden sm:inline">Soal Selanjutnya</span>
             <span className="sm:hidden">Lanjut</span>

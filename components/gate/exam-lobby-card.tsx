@@ -120,14 +120,14 @@ export function ExamLobbyCard({ verifiedData }: ExamLobbyCardProps) {
   };
 
   return (
-    <div className="w-full max-w-2xl animate-in fade-in zoom-in-95 duration-200">
+    <div className="animate-in fade-in zoom-in-95 w-full max-w-2xl duration-200">
       {/* Header Lobi */}
-      <div className="mb-6 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+      <div className="mb-6 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div>
           <div className="inline-flex items-center gap-2 rounded-full border border-emerald-200 bg-emerald-50 px-3 py-1 text-xs font-semibold text-emerald-700 shadow-xs dark:border-emerald-900/60 dark:bg-emerald-950/40 dark:text-emerald-300">
             <CheckCircle2 className="size-3.5 text-emerald-600 dark:text-emerald-400" />
             <span>Kode Rujukan:</span>
-            <span className="font-mono tracking-wider font-bold uppercase">{referralCode}</span>
+            <span className="font-mono font-bold tracking-wider uppercase">{referralCode}</span>
           </div>
           <h1 className="mt-2 text-2xl font-bold tracking-tight text-slate-900 dark:text-slate-50">
             Lobi Pra-Ujian
@@ -142,7 +142,7 @@ export function ExamLobbyCard({ verifiedData }: ExamLobbyCardProps) {
           variant="outline"
           size="sm"
           onClick={resetGate}
-          className="self-start sm:self-center text-xs text-slate-600 hover:text-slate-900 dark:text-slate-400 dark:hover:text-slate-100"
+          className="self-start text-xs text-slate-600 hover:text-slate-900 sm:self-center dark:text-slate-400 dark:hover:text-slate-100"
         >
           <RotateCcw className="mr-1.5 size-3.5" />
           <span>Ganti Kode</span>
@@ -160,7 +160,7 @@ export function ExamLobbyCard({ verifiedData }: ExamLobbyCardProps) {
               : "border-slate-200 bg-slate-100 text-slate-900 dark:border-slate-800 dark:bg-slate-900 dark:text-slate-200"
           }`}
         >
-          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
             <div className="flex items-center gap-2.5">
               {statusEngine.status === "NOT_STARTED" ? (
                 <div className="flex size-9 items-center justify-center rounded-lg bg-amber-500/20 text-amber-700 dark:text-amber-400">
@@ -176,7 +176,7 @@ export function ExamLobbyCard({ verifiedData }: ExamLobbyCardProps) {
                 </div>
               )}
               <div>
-                <div className="text-xs font-semibold uppercase tracking-wider">
+                <div className="text-xs font-semibold tracking-wider uppercase">
                   {statusEngine.status === "NOT_STARTED"
                     ? "Menunggu Jadwal Mulai"
                     : statusEngine.status === "IN_PROGRESS"
@@ -193,8 +193,8 @@ export function ExamLobbyCard({ verifiedData }: ExamLobbyCardProps) {
               </div>
             </div>
 
-            <div className="text-left sm:text-right font-mono tabular-nums">
-              <span className="text-xs block opacity-70">
+            <div className="text-left font-mono tabular-nums sm:text-right">
+              <span className="block text-xs opacity-70">
                 {statusEngine.status === "NOT_STARTED"
                   ? "Dimulai dalam:"
                   : statusEngine.status === "IN_PROGRESS"
@@ -221,7 +221,7 @@ export function ExamLobbyCard({ verifiedData }: ExamLobbyCardProps) {
                 {exam.duration_minutes} Menit
               </Badge>
             </div>
-            <CardTitle className="text-xl font-bold text-slate-900 dark:text-slate-50 leading-snug">
+            <CardTitle className="text-xl leading-snug font-bold text-slate-900 dark:text-slate-50">
               {exam.title}
             </CardTitle>
             <CardDescription className="text-xs text-slate-500">
@@ -231,26 +231,26 @@ export function ExamLobbyCard({ verifiedData }: ExamLobbyCardProps) {
 
           <CardContent className="space-y-4 pt-0">
             {/* Grid Jadwal & Durasi */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
+            <div className="grid grid-cols-1 gap-3 text-xs sm:grid-cols-2">
               <div className="flex items-start gap-2.5 rounded-lg border border-slate-100 bg-slate-50/70 p-3 dark:border-slate-800/60 dark:bg-slate-800/40">
-                <Calendar className="size-4 shrink-0 text-indigo-600 dark:text-indigo-400 mt-0.5" />
+                <Calendar className="mt-0.5 size-4 shrink-0 text-indigo-600 dark:text-indigo-400" />
                 <div>
-                  <span className="font-medium text-slate-500 dark:text-slate-400 block">
+                  <span className="block font-medium text-slate-500 dark:text-slate-400">
                     Waktu Mulai
                   </span>
-                  <span className="font-mono font-semibold text-slate-800 dark:text-slate-200 tabular-nums">
+                  <span className="font-mono font-semibold text-slate-800 tabular-nums dark:text-slate-200">
                     {formatDateTime(exam.starts_at)}
                   </span>
                 </div>
               </div>
 
               <div className="flex items-start gap-2.5 rounded-lg border border-slate-100 bg-slate-50/70 p-3 dark:border-slate-800/60 dark:bg-slate-800/40">
-                <Calendar className="size-4 shrink-0 text-indigo-600 dark:text-indigo-400 mt-0.5" />
+                <Calendar className="mt-0.5 size-4 shrink-0 text-indigo-600 dark:text-indigo-400" />
                 <div>
-                  <span className="font-medium text-slate-500 dark:text-slate-400 block">
+                  <span className="block font-medium text-slate-500 dark:text-slate-400">
                     Batas Akhir Selesai
                   </span>
-                  <span className="font-mono font-semibold text-slate-800 dark:text-slate-200 tabular-nums">
+                  <span className="font-mono font-semibold text-slate-800 tabular-nums dark:text-slate-200">
                     {formatDateTime(exam.ends_at)}
                   </span>
                 </div>
@@ -260,20 +260,20 @@ export function ExamLobbyCard({ verifiedData }: ExamLobbyCardProps) {
             {/* Petunjuk Teknis Markdown */}
             {exam.description && (
               <div className="rounded-xl border border-slate-200 bg-white p-4 dark:border-slate-800 dark:bg-slate-950">
-                <div className="flex items-center gap-1.5 text-xs font-semibold text-slate-700 dark:text-slate-300 mb-2">
+                <div className="mb-2 flex items-center gap-1.5 text-xs font-semibold text-slate-700 dark:text-slate-300">
                   <BookOpen className="size-3.5 text-indigo-600 dark:text-indigo-400" />
                   <span>Petunjuk Pengerjaan Teknis</span>
                 </div>
-                <div className="text-xs text-slate-600 dark:text-slate-300 leading-relaxed max-h-48 overflow-y-auto pr-1">
+                <div className="max-h-48 overflow-y-auto pr-1 text-xs leading-relaxed text-slate-600 dark:text-slate-300">
                   <MarkdownRenderer content={exam.description} />
                 </div>
               </div>
             )}
 
             {/* Formulir Identitas Siswa */}
-            <div className="rounded-xl border border-indigo-100 bg-indigo-50/30 p-4 dark:border-indigo-950/60 dark:bg-indigo-950/20 space-y-4">
+            <div className="space-y-4 rounded-xl border border-indigo-100 bg-indigo-50/30 p-4 dark:border-indigo-950/60 dark:bg-indigo-950/20">
               <div className="flex items-center gap-2">
-                <div className="flex size-6 items-center justify-center rounded-full bg-indigo-600 text-white text-xs font-bold">
+                <div className="flex size-6 items-center justify-center rounded-full bg-indigo-600 text-xs font-bold text-white">
                   !
                 </div>
                 <div>
@@ -286,12 +286,12 @@ export function ExamLobbyCard({ verifiedData }: ExamLobbyCardProps) {
                 </div>
               </div>
 
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
                 {/* Input Nama Lengkap */}
                 <div className="space-y-1.5">
                   <label
                     htmlFor="student-name"
-                    className="text-xs font-semibold tracking-wider text-slate-700 dark:text-slate-300 uppercase flex items-center gap-1"
+                    className="flex items-center gap-1 text-xs font-semibold tracking-wider text-slate-700 uppercase dark:text-slate-300"
                   >
                     <User className="size-3 text-slate-400" />
                     <span>Nama Lengkap Siswa</span>
@@ -303,7 +303,7 @@ export function ExamLobbyCard({ verifiedData }: ExamLobbyCardProps) {
                     placeholder="Contoh: Budi Santoso"
                     value={studentName}
                     onChange={(e) => setStudentName(e.target.value)}
-                    className="text-sm bg-white dark:bg-slate-900"
+                    className="bg-white text-sm dark:bg-slate-900"
                     autoComplete="name"
                     spellCheck="false"
                   />
@@ -318,7 +318,7 @@ export function ExamLobbyCard({ verifiedData }: ExamLobbyCardProps) {
                 <div className="space-y-1.5">
                   <label
                     htmlFor="student-class"
-                    className="text-xs font-semibold tracking-wider text-slate-700 dark:text-slate-300 uppercase flex items-center gap-1"
+                    className="flex items-center gap-1 text-xs font-semibold tracking-wider text-slate-700 uppercase dark:text-slate-300"
                   >
                     <GraduationCap className="size-3 text-slate-400" />
                     <span>Pilih Kelas Peserta</span>
@@ -329,7 +329,7 @@ export function ExamLobbyCard({ verifiedData }: ExamLobbyCardProps) {
                     name="studentClass"
                     value={studentClass}
                     onChange={(e) => setStudentClass(e.target.value)}
-                    className="w-full rounded-md border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 shadow-xs focus:border-indigo-600 focus:outline-none focus:ring-1 focus:ring-indigo-600 dark:border-slate-800 dark:bg-slate-900 dark:text-slate-100"
+                    className="w-full rounded-md border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 shadow-xs focus:border-indigo-600 focus:ring-1 focus:ring-indigo-600 focus:outline-none dark:border-slate-800 dark:bg-slate-900 dark:text-slate-100"
                   >
                     <option value="" disabled>
                       -- Pilih Kelas Peserta --
@@ -355,9 +355,9 @@ export function ExamLobbyCard({ verifiedData }: ExamLobbyCardProps) {
             {startError && (
               <div
                 role="alert"
-                className="w-full flex items-start gap-2.5 rounded-lg border border-rose-200 bg-rose-50 p-3 text-xs text-rose-800 dark:border-rose-900/60 dark:bg-rose-950/40 dark:text-rose-200"
+                className="flex w-full items-start gap-2.5 rounded-lg border border-rose-200 bg-rose-50 p-3 text-xs text-rose-800 dark:border-rose-900/60 dark:bg-rose-950/40 dark:text-rose-200"
               >
-                <AlertCircle className="size-4 shrink-0 mt-0.5" />
+                <AlertCircle className="mt-0.5 size-4 shrink-0" />
                 <div className="flex-1 leading-relaxed">{startError}</div>
               </div>
             )}
@@ -366,7 +366,7 @@ export function ExamLobbyCard({ verifiedData }: ExamLobbyCardProps) {
               <Button
                 type="button"
                 disabled
-                className="w-full bg-slate-200 text-slate-500 dark:bg-slate-800 dark:text-slate-400 cursor-not-allowed font-medium py-6"
+                className="w-full cursor-not-allowed bg-slate-200 py-6 font-medium text-slate-500 dark:bg-slate-800 dark:text-slate-400"
               >
                 <Hourglass className="mr-2 size-4 animate-spin text-slate-400" />
                 <span className="font-mono tabular-nums">
@@ -379,7 +379,7 @@ export function ExamLobbyCard({ verifiedData }: ExamLobbyCardProps) {
                   type="button"
                   onClick={handleStartExam}
                   disabled={!isFormValid || isStarting}
-                  className="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-semibold py-6 text-base transition-all disabled:opacity-60 disabled:cursor-not-allowed"
+                  className="w-full bg-indigo-600 py-6 text-base font-semibold text-white transition-all hover:bg-indigo-700 disabled:cursor-not-allowed disabled:opacity-60"
                 >
                   {isStarting ? (
                     <>
@@ -404,7 +404,7 @@ export function ExamLobbyCard({ verifiedData }: ExamLobbyCardProps) {
               <Button
                 type="button"
                 disabled
-                className="w-full bg-rose-100 text-rose-700 dark:bg-rose-950/50 dark:text-rose-400 cursor-not-allowed font-medium py-6"
+                className="w-full cursor-not-allowed bg-rose-100 py-6 font-medium text-rose-700 dark:bg-rose-950/50 dark:text-rose-400"
               >
                 <AlertCircle className="mr-2 size-4" />
                 <span>Sesi Ujian Telah Berakhir</span>

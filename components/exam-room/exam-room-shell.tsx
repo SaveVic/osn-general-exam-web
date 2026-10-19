@@ -100,8 +100,8 @@ export function ExamRoomShell({ sessionId }: ExamRoomShellProps) {
   if (!isHydrated) {
     return (
       <div className="flex min-h-screen items-center justify-center bg-slate-50 dark:bg-slate-950">
-        <div className="text-center space-y-2">
-          <div className="size-8 mx-auto border-3 border-indigo-600 border-t-transparent rounded-full animate-spin" />
+        <div className="space-y-2 text-center">
+          <div className="mx-auto size-8 animate-spin rounded-full border-3 border-indigo-600 border-t-transparent" />
           <p className="text-xs text-slate-500">Memuat lembar ruang ujian...</p>
         </div>
       </div>
@@ -111,8 +111,8 @@ export function ExamRoomShell({ sessionId }: ExamRoomShellProps) {
   // Jika state lokal di localStorage tidak ditemukan atau sessionId tidak cocok
   if (!storeSessionId || storeSessionId !== sessionId) {
     return (
-      <div className="flex min-h-screen items-center justify-center p-4 bg-slate-50 dark:bg-slate-950">
-        <Card className="max-w-md w-full border-rose-200 dark:border-rose-900/60 shadow-sm">
+      <div className="flex min-h-screen items-center justify-center bg-slate-50 p-4 dark:bg-slate-950">
+        <Card className="w-full max-w-md border-rose-200 shadow-sm dark:border-rose-900/60">
           <CardHeader>
             <div className="flex items-center gap-2 text-rose-600 dark:text-rose-400">
               <AlertCircle className="size-5" />
@@ -125,7 +125,7 @@ export function ExamRoomShell({ sessionId }: ExamRoomShellProps) {
               Hal ini dapat terjadi jika Anda membuka tautan di jendela penyamaran (*incognito*) atau peramban yang berbeda.
             </p>
             <Link href="/" className="block">
-              <Button className="w-full bg-indigo-600 hover:bg-indigo-700 text-white">
+              <Button className="w-full bg-indigo-600 text-white hover:bg-indigo-700">
                 Kembali ke Gerbang Masuk
               </Button>
             </Link>
@@ -138,10 +138,10 @@ export function ExamRoomShell({ sessionId }: ExamRoomShellProps) {
   // Jika ujian sudah berstatus dikumpulkan / selesai
   if (isSubmitted) {
     return (
-      <div className="flex min-h-screen items-center justify-center p-4 bg-slate-50 dark:bg-slate-950">
-        <Card className="max-w-md w-full border-emerald-200 dark:border-emerald-900/60 shadow-md">
-          <CardHeader className="text-center pb-2">
-            <div className="mx-auto flex size-12 items-center justify-center rounded-full bg-emerald-100 text-emerald-600 dark:bg-emerald-950/60 dark:text-emerald-400 mb-2">
+      <div className="flex min-h-screen items-center justify-center bg-slate-50 p-4 dark:bg-slate-950">
+        <Card className="w-full max-w-md border-emerald-200 shadow-md dark:border-emerald-900/60">
+          <CardHeader className="pb-2 text-center">
+            <div className="mx-auto mb-2 flex size-12 items-center justify-center rounded-full bg-emerald-100 text-emerald-600 dark:bg-emerald-950/60 dark:text-emerald-400">
               <CheckCircle2 className="size-6" />
             </div>
             <CardTitle className="text-xl font-bold text-slate-900 dark:text-slate-100">
@@ -152,7 +152,7 @@ export function ExamRoomShell({ sessionId }: ExamRoomShellProps) {
             <p className="leading-relaxed">
               Terima kasih, <strong>{studentName}</strong> ({studentClass}). Seluruh lembar pengerjaan untuk ujian <strong>{examTitle}</strong> telah tercatat dan diserahkan.
             </p>
-            <div className="rounded-lg bg-slate-100 dark:bg-slate-800/80 p-3 text-xs space-y-1">
+            <div className="space-y-1 rounded-lg bg-slate-100 p-3 text-xs dark:bg-slate-800/80">
               <div>Total Soal: <strong>{totalQuestions}</strong> butir</div>
               <div>Soal Terjawab: <strong className="text-emerald-600 dark:text-emerald-400">{answeredCount}</strong> butir</div>
             </div>
@@ -170,24 +170,24 @@ export function ExamRoomShell({ sessionId }: ExamRoomShellProps) {
   const currentQuestion = questions[currentIndex];
 
   return (
-    <div className="min-h-screen flex flex-col bg-slate-50/70 dark:bg-slate-950">
+    <div className="flex min-h-screen flex-col bg-slate-50/70 dark:bg-slate-950">
       {/* Bilah Atas Sticky (Header Ruang Ujian) */}
-      <header className="sticky top-0 z-30 border-b border-slate-200 bg-white/95 backdrop-blur-md px-4 py-2.5 sm:py-3 dark:border-slate-800 dark:bg-slate-900/95 shadow-2xs">
+      <header className="sticky top-0 z-30 border-b border-slate-200 bg-white/95 px-4 py-2.5 shadow-2xs backdrop-blur-md sm:py-3 dark:border-slate-800 dark:bg-slate-900/95">
         <div className="mx-auto flex max-w-5xl items-center justify-between gap-3 sm:gap-6">
           {/* Sisi Kiri: Judul Ujian & Identitas Siswa */}
           <div className="min-w-0">
             <div className="flex items-center gap-2">
-              <Badge variant="outline" className="border-indigo-200 text-indigo-700 dark:border-indigo-800 dark:text-indigo-300 text-xs hidden sm:inline-flex">
+              <Badge variant="outline" className="hidden border-indigo-200 text-xs text-indigo-700 sm:inline-flex dark:border-indigo-800 dark:text-indigo-300">
                 Sesi Aktif
               </Badge>
-              <h1 className="truncate text-sm sm:text-base font-bold text-slate-900 dark:text-slate-100">
+              <h1 className="truncate text-sm font-bold text-slate-900 sm:text-base dark:text-slate-100">
                 {examTitle}
               </h1>
             </div>
-            <div className="flex items-center gap-2 sm:gap-3 text-xs text-slate-500 dark:text-slate-400 mt-0.5">
+            <div className="mt-0.5 flex items-center gap-2 text-xs text-slate-500 sm:gap-3 dark:text-slate-400">
               <span className="flex items-center gap-1">
                 <User className="size-3" />
-                <span className="truncate max-w-[100px] sm:max-w-none">{studentName}</span>
+                <span className="max-w-25 truncate sm:max-w-none">{studentName}</span>
               </span>
               <span>•</span>
               <span className="flex items-center gap-1">
@@ -206,12 +206,12 @@ export function ExamRoomShell({ sessionId }: ExamRoomShellProps) {
           </div>
 
           {/* Sisi Kanan: Aksi Selesaikan Ujian */}
-          <div className="flex items-center gap-2 shrink-0">
+          <div className="flex shrink-0 items-center gap-2">
             <Button
               type="button"
               size="sm"
               onClick={() => setIsFinishDialogOpen(true)}
-              className="bg-emerald-600 hover:bg-emerald-700 text-white text-xs gap-1.5 h-9 px-3 sm:px-4 shadow-xs"
+              className="h-9 gap-1.5 bg-emerald-600 px-3 text-xs text-white shadow-xs hover:bg-emerald-700 sm:px-4"
             >
               <Send className="size-3.5" />
               <span className="hidden md:inline">Selesaikan Ujian</span>
@@ -222,7 +222,7 @@ export function ExamRoomShell({ sessionId }: ExamRoomShellProps) {
       </header>
 
       {/* Konten Lembar Soal Aktif */}
-      <main className="flex-1 max-w-5xl w-full mx-auto p-3.5 sm:p-6 md:p-8 space-y-6">
+      <main className="mx-auto w-full max-w-5xl flex-1 space-y-6 p-3.5 sm:p-6 md:p-8">
         {currentQuestion ? (
           <QuestionCard
             question={currentQuestion}
@@ -231,7 +231,7 @@ export function ExamRoomShell({ sessionId }: ExamRoomShellProps) {
             isFlagged={Boolean(flaggedMap[currentQuestion.id])}
           />
         ) : (
-          <div className="text-center py-12 text-slate-500 text-sm">
+          <div className="py-12 text-center text-sm text-slate-500">
             Tidak ada butir soal yang dapat ditampilkan pada nomor ini.
           </div>
         )}

@@ -60,7 +60,7 @@ export function QuestionToolbar({
   return (
     <div className="flex flex-wrap items-center gap-1 rounded-t-lg border border-b-0 border-slate-200 bg-slate-50 p-1.5 dark:border-slate-800 dark:bg-slate-900/60">
       {/* Format Teks */}
-      <div className="flex items-center gap-0.5 pr-1.5 border-r border-slate-200 dark:border-slate-800">
+      <div className="flex items-center gap-0.5 border-r border-slate-200 pr-1.5 dark:border-slate-800">
         <Button
           type="button"
           variant="ghost"
@@ -108,7 +108,7 @@ export function QuestionToolbar({
       </div>
 
       {/* Formula Matematika LaTeX */}
-      <div className="flex items-center gap-0.5 pr-1.5 border-r border-slate-200 dark:border-slate-800">
+      <div className="flex items-center gap-0.5 border-r border-slate-200 pr-1.5 dark:border-slate-800">
         <Button
           type="button"
           variant="ghost"
@@ -191,7 +191,7 @@ export function QuestionToolbar({
       </div>
 
       {/* Blok Kode Pemrograman */}
-      <div className="flex items-center gap-0.5 pr-1.5 border-r border-slate-200 dark:border-slate-800">
+      <div className="flex items-center gap-0.5 border-r border-slate-200 pr-1.5 dark:border-slate-800">
         <Popover>
           <PopoverTrigger asChild>
             <Button
@@ -282,7 +282,7 @@ export function QuestionToolbar({
 
       {/* Unggah Diagram Gambar */}
       {onOpenImageModal && (
-        <div className="flex items-center gap-0.5 pl-1.5 border-l border-slate-200 dark:border-slate-800">
+        <div className="flex items-center gap-0.5 border-l border-slate-200 pl-1.5 dark:border-slate-800">
           <Button
             type="button"
             variant="ghost"

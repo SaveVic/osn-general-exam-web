@@ -202,7 +202,7 @@ export function ImageUploadModal({
             type="button"
             onClick={() => setActiveTab("upload")}
             className={cn(
-              "px-4 py-2 text-xs font-semibold transition-colors border-b-2 -mb-px",
+              "-mb-px border-b-2 px-4 py-2 text-xs font-semibold transition-colors",
               activeTab === "upload"
                 ? "border-indigo-600 text-indigo-600 dark:border-indigo-400 dark:text-indigo-400"
                 : "border-transparent text-slate-500 hover:text-slate-800 dark:text-slate-400 dark:hover:text-slate-200"
@@ -214,7 +214,7 @@ export function ImageUploadModal({
             type="button"
             onClick={() => setActiveTab("gallery")}
             className={cn(
-              "px-4 py-2 text-xs font-semibold transition-colors border-b-2 -mb-px",
+              "-mb-px border-b-2 px-4 py-2 text-xs font-semibold transition-colors",
               activeTab === "gallery"
                 ? "border-indigo-600 text-indigo-600 dark:border-indigo-400 dark:text-indigo-400"
                 : "border-transparent text-slate-500 hover:text-slate-800 dark:text-slate-400 dark:hover:text-slate-200"
@@ -244,7 +244,7 @@ export function ImageUploadModal({
                   "cursor-pointer rounded-xl border-2 border-dashed p-8 text-center transition-all",
                   isDragging
                     ? "border-indigo-500 bg-indigo-50/50 dark:border-indigo-400 dark:bg-indigo-950/30"
-                    : "border-slate-300 hover:border-slate-400 dark:border-slate-700 dark:hover:border-slate-600 bg-slate-50/50 dark:bg-slate-900/40"
+                    : "border-slate-300 bg-slate-50/50 hover:border-slate-400 dark:border-slate-700 dark:bg-slate-900/40 dark:hover:border-slate-600"
                 )}
               >
                 <input
@@ -273,8 +273,8 @@ export function ImageUploadModal({
               <div className="space-y-4">
                 {/* Pratinjau Gambar Terpilih */}
                 <div className="relative rounded-lg border border-slate-200 bg-slate-50 p-3 dark:border-slate-800 dark:bg-slate-900">
-                  <div className="flex items-center justify-between pb-2 border-b border-slate-200 dark:border-slate-800 mb-2">
-                    <span className="flex items-center gap-1.5 text-xs font-medium text-slate-700 dark:text-slate-300 truncate">
+                  <div className="mb-2 flex items-center justify-between border-b border-slate-200 pb-2 dark:border-slate-800">
+                    <span className="flex items-center gap-1.5 truncate text-xs font-medium text-slate-700 dark:text-slate-300">
                       <FileImage className="size-3.5 text-indigo-600 dark:text-indigo-400" />
                       {file.name} ({(file.size / 1024).toFixed(1)} KB)
                     </span>
@@ -353,16 +353,16 @@ export function ImageUploadModal({
           <div className="space-y-3 pt-2">
             {isLoadingAssets ? (
               <div className="flex flex-col items-center justify-center py-12 text-slate-400">
-                <Loader2 className="size-6 animate-spin text-indigo-600 mb-2" />
+                <Loader2 className="mb-2 size-6 animate-spin text-indigo-600" />
                 <p className="text-xs">Memuat galeri diagram ujian...</p>
               </div>
             ) : assets.length === 0 ? (
               <div className="rounded-xl border border-dashed border-slate-200 py-10 text-center dark:border-slate-800">
-                <FileImage className="mx-auto size-8 text-slate-300 dark:text-slate-600 mb-2" />
+                <FileImage className="mx-auto mb-2 size-8 text-slate-300 dark:text-slate-600" />
                 <p className="text-xs font-semibold text-slate-700 dark:text-slate-300">
                   Belum Ada Diagram yang Diunggah
                 </p>
-                <p className="text-[11px] text-slate-400 mt-0.5">
+                <p className="mt-0.5 text-[11px] text-slate-400">
                   Gunakan tab &quot;Unggah Berkas Baru&quot; untuk mengunggah diagram pertama Anda.
                 </p>
               </div>
@@ -382,7 +382,7 @@ export function ImageUploadModal({
                     </div>
 
                     <div className="flex items-center justify-between p-2 text-[11px]">
-                      <span className="truncate max-w-[100px] text-slate-700 dark:text-slate-300 font-mono" title={item.name}>
+                      <span className="max-w-25 truncate font-mono text-slate-700 dark:text-slate-300" title={item.name}>
                         {item.name}
                       </span>
                       <Button
@@ -406,7 +406,7 @@ export function ImageUploadModal({
                       type="button"
                       size="sm"
                       onClick={() => handleSelectFromGallery(item)}
-                      className="w-full rounded-none border-t border-slate-200 bg-slate-50 text-[11px] font-semibold text-indigo-600 hover:bg-indigo-50 dark:border-slate-800 dark:bg-slate-800 dark:text-indigo-400 dark:hover:bg-slate-700 h-7"
+                      className="h-7 w-full rounded-none border-t border-slate-200 bg-slate-50 text-[11px] font-semibold text-indigo-600 hover:bg-indigo-50 dark:border-slate-800 dark:bg-slate-800 dark:text-indigo-400 dark:hover:bg-slate-700"
                     >
                       Sisipkan ke Soal
                     </Button>

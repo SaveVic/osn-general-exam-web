@@ -179,7 +179,7 @@ export function QuestionList({
           <div
             key={q.id}
             className={cn(
-              "group relative flex flex-col justify-between gap-4 rounded-xl border border-slate-200 bg-white p-4 shadow-2xs transition-all hover:border-slate-300 dark:border-slate-800 dark:bg-slate-900 dark:hover:border-slate-700 sm:flex-row sm:items-start",
+              "group relative flex flex-col justify-between gap-4 rounded-xl border border-slate-200 bg-white p-4 shadow-2xs transition-all hover:border-slate-300 sm:flex-row sm:items-start dark:border-slate-800 dark:bg-slate-900 dark:hover:border-slate-700",
               isPending && "pointer-events-none opacity-60"
             )}
           >
@@ -199,7 +199,7 @@ export function QuestionList({
               <div className="max-h-24 overflow-hidden pt-1">
                 <MarkdownRenderer
                   content={q.prompt}
-                  className="prose-p:my-0 text-sm line-clamp-3"
+                  className="line-clamp-3 text-sm prose-p:my-0"
                 />
               </div>
             </div>

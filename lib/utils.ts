@@ -1,3 +1,4 @@
+/* eslint-disable tailwindcss/no-custom-classname */
 import { clsx, type ClassValue } from "clsx";
 import { twMerge } from "tailwind-merge";
 

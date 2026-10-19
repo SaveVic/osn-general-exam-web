@@ -25,10 +25,10 @@ export default async function ExamSessionPage({ params }: ExamSessionPageProps) 
   if (!auth.valid) {
     if (auth.session?.is_completed) {
       return (
-        <div className="flex min-h-screen items-center justify-center p-4 bg-slate-50 dark:bg-slate-950">
-          <Card className="max-w-md w-full border-slate-200 dark:border-slate-800 shadow-sm text-center">
+        <div className="flex min-h-screen items-center justify-center bg-slate-50 p-4 dark:bg-slate-950">
+          <Card className="w-full max-w-md border-slate-200 text-center shadow-sm dark:border-slate-800">
             <CardHeader className="flex flex-col items-center">
-              <div className="size-12 rounded-full bg-emerald-100 dark:bg-emerald-950/60 text-emerald-600 dark:text-emerald-400 flex items-center justify-center mb-2">
+              <div className="mb-2 flex size-12 items-center justify-center rounded-full bg-emerald-100 text-emerald-600 dark:bg-emerald-950/60 dark:text-emerald-400">
                 <CheckCircle2 className="size-6" />
               </div>
               <CardTitle className="text-xl">Ujian Telah Diselesaikan</CardTitle>
@@ -38,7 +38,7 @@ export default async function ExamSessionPage({ params }: ExamSessionPageProps) 
                 Sesi ujian untuk peserta <strong>{auth.session.student_name}</strong> telah berhasil dikumpulkan dan ditutup.
               </p>
               <Link href="/" className="block">
-                <Button className="w-full bg-indigo-600 hover:bg-indigo-700 text-white">
+                <Button className="w-full bg-indigo-600 text-white hover:bg-indigo-700">
                   Kembali ke Halaman Beranda
                 </Button>
               </Link>

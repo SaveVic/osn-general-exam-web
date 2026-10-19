@@ -130,7 +130,7 @@ export function ReferralGateCard() {
                   placeholder="Contoh: MAT2026-X89"
                   value={code}
                   onChange={(e) => setCode(e.target.value.toUpperCase())}
-                  className="font-mono text-base tracking-widest uppercase pr-10"
+                  className="pr-10 font-mono text-base tracking-widest uppercase"
                   autoComplete="off"
                   autoCapitalize="characters"
                   spellCheck="false"
@@ -146,7 +146,7 @@ export function ReferralGateCard() {
                 role="alert"
                 className="flex items-start gap-2.5 rounded-lg border border-rose-200 bg-rose-50 p-3 text-xs text-rose-800 dark:border-rose-900/60 dark:bg-rose-950/40 dark:text-rose-200"
               >
-                <AlertCircle className="size-4 shrink-0 mt-0.5" />
+                <AlertCircle className="mt-0.5 size-4 shrink-0" />
                 <div className="flex-1 leading-relaxed">
                   {error}
                 </div>

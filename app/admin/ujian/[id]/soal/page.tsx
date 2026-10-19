@@ -47,7 +47,7 @@ export default async function ExamQuestionsPage({ params }: ExamQuestionsPagePro
             <span>/</span>
             <Link
               href={`/admin/ujian/${exam.id}/pengaturan`}
-              className="hover:text-indigo-600 dark:hover:text-indigo-400 truncate max-w-[200px]"
+              className="max-w-50 truncate hover:text-indigo-600 dark:hover:text-indigo-400"
             >
               {exam.title}
             </Link>

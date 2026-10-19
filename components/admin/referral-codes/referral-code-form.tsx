@@ -97,7 +97,7 @@ export function ReferralCodeForm({
   };
 
   return (
-    <div className="rounded-xl border border-slate-200 bg-white p-5 shadow-xs dark:border-slate-800 dark:bg-slate-900 sm:p-6">
+    <div className="rounded-xl border border-slate-200 bg-white p-5 shadow-xs sm:p-6 dark:border-slate-800 dark:bg-slate-900">
       <div className="mb-4 flex items-center gap-2 border-b border-slate-100 pb-3 dark:border-slate-800">
         <KeyRound className="size-4 text-indigo-600 dark:text-indigo-400" />
         <h2 className="text-sm font-bold tracking-tight text-slate-900 dark:text-slate-100">
@@ -125,7 +125,7 @@ export function ReferralCodeForm({
                 value={code}
                 onChange={(e) => setCode(e.target.value.toUpperCase())}
                 placeholder="Contoh: MAT26-X89"
-                className="font-mono text-sm uppercase tracking-wider font-bold"
+                className="font-mono text-sm font-bold tracking-wider uppercase"
                 disabled={isPending}
                 required
               />
@@ -136,7 +136,7 @@ export function ReferralCodeForm({
               onClick={handleRandomize}
               disabled={isPending}
               title="Buat kombinasi kode acak otomatis"
-              className="gap-1.5 text-xs border-slate-300 dark:border-slate-700"
+              className="gap-1.5 border-slate-300 text-xs dark:border-slate-700"
             >
               <Sparkles className="size-3.5 text-amber-500" />
               <span>Acak Kode</span>
@@ -192,12 +192,12 @@ export function ReferralCodeForm({
                       value={maxUses}
                       onChange={(e) => setMaxUses(e.target.value)}
                       placeholder="Contoh: 30"
-                      className="h-8 font-mono text-xs w-32"
+                      className="h-8 w-32 font-mono text-xs"
                       disabled={isPending}
                       required={!isUnlimited}
                     />
                     {fieldErrors.max_uses && (
-                      <p className="text-xs text-destructive pt-1">{fieldErrors.max_uses[0]}</p>
+                      <p className="pt-1 text-xs text-destructive">{fieldErrors.max_uses[0]}</p>
                     )}
                   </div>
                 )}
@@ -274,7 +274,7 @@ export function ReferralCodeForm({
             </label>
 
             {expirationType === "custom" && (
-              <div className="pl-6 pt-1 max-w-sm">
+              <div className="max-w-sm pt-1 pl-6">
                 <DateTimePicker
                   id="expires_at"
                   name="expires_at"
@@ -283,7 +283,7 @@ export function ReferralCodeForm({
                   disabled={isPending}
                 />
                 {fieldErrors.expires_at && (
-                  <p className="text-xs text-destructive pt-1">{fieldErrors.expires_at[0]}</p>
+                  <p className="pt-1 text-xs text-destructive">{fieldErrors.expires_at[0]}</p>
                 )}
               </div>
             )}

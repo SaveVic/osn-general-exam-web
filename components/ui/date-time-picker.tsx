@@ -198,7 +198,7 @@ export function DateTimePicker({
 
         <PopoverContent
           align="start"
-          className="w-auto p-4 border border-slate-200 bg-white shadow-xl dark:border-slate-800 dark:bg-slate-900"
+          className="w-auto border border-slate-200 bg-white p-4 shadow-xl dark:border-slate-800 dark:bg-slate-900"
         >
           <div className="flex flex-col gap-4 sm:flex-row">
             {/* Sisi Kiri: Kalender Tanggal */}
@@ -301,8 +301,8 @@ export function DateTimePicker({
             </div>
 
             {/* Garis Pemisah Responsif */}
-            <div className="hidden border-l border-slate-200 dark:border-slate-800 sm:block" />
-            <div className="border-t border-slate-200 dark:border-slate-800 sm:hidden" />
+            <div className="hidden border-l border-slate-200 sm:block dark:border-slate-800" />
+            <div className="border-t border-slate-200 sm:hidden dark:border-slate-800" />
 
             {/* Sisi Kanan: Pemilih Jam & Menit */}
             <div className="w-52 space-y-3">

@@ -11,7 +11,7 @@ function GateCardSkeleton() {
   return (
     <div className="w-full max-w-md">
       <Card className="border-slate-200 dark:border-slate-800 dark:bg-slate-900">
-        <CardContent className="flex flex-col items-center justify-center p-8 space-y-3">
+        <CardContent className="flex flex-col items-center justify-center space-y-3 p-8">
           <Loader2 className="size-6 animate-spin text-indigo-600 dark:text-indigo-400" />
           <p className="text-xs text-slate-400">Menyiapkan gerbang ujian...</p>
         </CardContent>

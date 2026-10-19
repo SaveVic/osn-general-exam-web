@@ -25,7 +25,7 @@ export function AdminHeader({ userEmail }: AdminHeaderProps) {
         </div>
 
         <div className="flex items-center gap-4">
-          <span className="hidden text-xs font-mono text-slate-500 sm:inline-block dark:text-slate-400">
+          <span className="hidden font-mono text-xs text-slate-500 sm:inline-block dark:text-slate-400">
             {userEmail}
           </span>
           <form action={logoutAdmin}>

@@ -47,7 +47,7 @@ export default async function ReferralCodesPage({ params }: ReferralCodesPagePro
             <span>/</span>
             <Link
               href={`/admin/ujian/${exam.id}/pengaturan`}
-              className="hover:text-indigo-600 dark:hover:text-indigo-400 truncate max-w-[200px]"
+              className="max-w-50 truncate hover:text-indigo-600 dark:hover:text-indigo-400"
             >
               {exam.title}
             </Link>
@@ -58,13 +58,13 @@ export default async function ReferralCodesPage({ params }: ReferralCodesPagePro
           </div>
 
           <div className="flex items-center gap-2">
-            <Button asChild variant="outline" size="sm" className="gap-1.5 text-xs border-slate-300 dark:border-slate-700">
+            <Button asChild variant="outline" size="sm" className="gap-1.5 border-slate-300 text-xs dark:border-slate-700">
               <Link href={`/admin/ujian/${exam.id}/soal`}>
                 <BookOpen className="size-3.5 text-indigo-600 dark:text-indigo-400" />
                 Bank Soal
               </Link>
             </Button>
-            <Button asChild variant="outline" size="sm" className="gap-1.5 text-xs border-slate-300 dark:border-slate-700">
+            <Button asChild variant="outline" size="sm" className="gap-1.5 border-slate-300 text-xs dark:border-slate-700">
               <Link href={`/admin/ujian/${exam.id}/pengaturan`}>
                 <Settings className="size-3.5 text-slate-600 dark:text-slate-400" />
                 Pengaturan

@@ -139,9 +139,9 @@ export function ReferralCodeList({ examId, codes }: ReferralCodeListProps) {
             <div
               key={item.id}
               className={cn(
-                "group relative flex flex-col justify-between gap-4 rounded-xl border bg-white p-4 shadow-2xs transition-all dark:bg-slate-900 sm:flex-row sm:items-center",
+                "group relative flex flex-col justify-between gap-4 rounded-xl border bg-white p-4 shadow-2xs transition-all sm:flex-row sm:items-center dark:bg-slate-900",
                 item.is_active && !isExpired && !isQuotaFull
-                  ? "border-slate-200 dark:border-slate-800 hover:border-slate-300 dark:hover:border-slate-700"
+                  ? "border-slate-200 hover:border-slate-300 dark:border-slate-800 dark:hover:border-slate-700"
                   : "border-slate-200/60 bg-slate-50/50 opacity-80 dark:border-slate-800/60 dark:bg-slate-950/40"
               )}
             >
@@ -164,7 +164,7 @@ export function ReferralCodeList({ examId, codes }: ReferralCodeListProps) {
                     {copiedCodeId === item.id ? (
                       <>
                         <Check className="size-3 text-emerald-600" />
-                        <span className="text-[11px] text-emerald-600 font-semibold">Tersalin</span>
+                        <span className="text-[11px] font-semibold text-emerald-600">Tersalin</span>
                       </>
                     ) : (
                       <>
@@ -186,7 +186,7 @@ export function ReferralCodeList({ examId, codes }: ReferralCodeListProps) {
                     {copiedLinkId === item.id ? (
                       <>
                         <Check className="size-3 text-emerald-600" />
-                        <span className="text-[11px] text-emerald-600 font-semibold">Tautan Tersalin!</span>
+                        <span className="text-[11px] font-semibold text-emerald-600">Tautan Tersalin!</span>
                       </>
                     ) : (
                       <>
@@ -223,7 +223,7 @@ export function ReferralCodeList({ examId, codes }: ReferralCodeListProps) {
                 </div>
 
                 {/* Info Kuota & Masa Berlaku */}
-                <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-slate-500 dark:text-slate-400 pt-1">
+                <div className="flex flex-wrap items-center gap-x-4 gap-y-1 pt-1 text-xs text-slate-500 dark:text-slate-400">
                   {/* Pemakaian Kuota */}
                   <div className="flex items-center gap-1.5">
                     <Users className="size-3.5 text-slate-400" />
@@ -237,7 +237,7 @@ export function ReferralCodeList({ examId, codes }: ReferralCodeListProps) {
                         <span className="font-mono">{item.max_uses} Peserta</span>
                       ) : (
                         <span className="inline-flex items-center gap-0.5">
-                          <InfinityIcon className="size-3 inline" />
+                          <InfinityIcon className="inline size-3" />
                           <span>(Tanpa Batas)</span>
                         </span>
                       )}
@@ -283,7 +283,7 @@ export function ReferralCodeList({ examId, codes }: ReferralCodeListProps) {
                   onClick={() => handleToggle(item.id, item.is_active)}
                   disabled={isPending}
                   className={cn(
-                    "h-8 gap-1 text-xs border-slate-300 dark:border-slate-700",
+                    "h-8 gap-1 border-slate-300 text-xs dark:border-slate-700",
                     item.is_active
                       ? "text-slate-600 hover:text-red-600"
                       : "text-emerald-600 hover:bg-emerald-50 dark:hover:bg-emerald-950/40"
@@ -324,7 +324,7 @@ export function ReferralCodeList({ examId, codes }: ReferralCodeListProps) {
               </strong>
               ?
               {deleteTarget && deleteTarget.current_uses > 0 && (
-                <span className="block pt-2 text-destructive font-medium">
+                <span className="block pt-2 font-medium text-destructive">
                   Perhatian: Kode ini telah digunakan oleh {deleteTarget.current_uses} sesi peserta.
                 </span>
               )}

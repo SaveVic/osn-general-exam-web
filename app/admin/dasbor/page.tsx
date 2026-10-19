@@ -58,7 +58,7 @@ export default async function AdminDashboardPage() {
               <BookOpen className="size-4 text-indigo-600 dark:text-indigo-400" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold font-mono text-slate-900 dark:text-slate-50">
+              <div className="font-mono text-2xl font-bold text-slate-900 dark:text-slate-50">
                 {totalExams}
               </div>
               <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">
@@ -75,7 +75,7 @@ export default async function AdminDashboardPage() {
               <Users className="size-4 text-indigo-600 dark:text-indigo-400" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold font-mono text-slate-900 dark:text-slate-50">
+              <div className="font-mono text-2xl font-bold text-slate-900 dark:text-slate-50">
                 {totalSessions}
               </div>
               <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">

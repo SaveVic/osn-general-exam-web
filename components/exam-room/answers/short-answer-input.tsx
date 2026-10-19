@@ -34,11 +34,11 @@ export function ShortAnswerInput({
   const hasValue = localValue.trim().length > 0;
 
   return (
-    <div className="space-y-4 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900/60 p-4 sm:p-5">
+    <div className="space-y-4 rounded-xl border border-slate-200 bg-white p-4 sm:p-5 dark:border-slate-800 dark:bg-slate-900/60">
       <div className="space-y-1.5">
         <label
           htmlFor={`input-answer-${questionId}`}
-          className="flex items-center gap-2 text-xs font-semibold uppercase tracking-wider text-slate-700 dark:text-slate-300"
+          className="flex items-center gap-2 text-xs font-semibold tracking-wider text-slate-700 uppercase dark:text-slate-300"
         >
           <Edit3 className="size-3.5 text-indigo-600 dark:text-indigo-400" />
           <span>Kolom Jawaban Isian Singkat:</span>
@@ -55,18 +55,18 @@ export function ShortAnswerInput({
           value={localValue}
           onChange={handleChange}
           placeholder="Ketik jawaban akhir Anda di sini..."
-          className="h-12 px-4 font-mono text-base bg-slate-50 dark:bg-slate-950/60 border-slate-300 dark:border-slate-700 focus-visible:ring-indigo-500"
+          className="h-12 border-slate-300 bg-slate-50 px-4 font-mono text-base focus-visible:ring-indigo-500 dark:border-slate-700 dark:bg-slate-950/60"
           autoComplete="off"
           spellCheck={false}
         />
       </div>
 
-      <div className="flex items-center justify-between text-xs pt-1">
+      <div className="flex items-center justify-between pt-1 text-xs">
         <div className="flex items-center gap-1.5 text-slate-500 dark:text-slate-400">
           {hasValue ? (
             <>
               <Check className="size-3.5 text-emerald-600 dark:text-emerald-400" />
-              <span className="text-emerald-700 dark:text-emerald-300 font-medium">Tersimpan di perangkat</span>
+              <span className="font-medium text-emerald-700 dark:text-emerald-300">Tersimpan di perangkat</span>
             </>
           ) : (
             <span>Belum ada jawaban yang diisi</span>
@@ -82,7 +82,7 @@ export function ShortAnswerInput({
               setLocalValue("");
               onClearText();
             }}
-            className="text-xs text-slate-500 hover:text-rose-600 dark:text-slate-400 dark:hover:text-rose-400 gap-1.5 h-7 px-2"
+            className="h-7 gap-1.5 px-2 text-xs text-slate-500 hover:text-rose-600 dark:text-slate-400 dark:hover:text-rose-400"
           >
             <RotateCcw className="size-3" />
             <span>Hapus Jawaban</span>

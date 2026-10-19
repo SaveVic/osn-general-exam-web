@@ -46,7 +46,7 @@ export function QuestionBankManager({ exam, questions }: QuestionBankManagerProp
   return (
     <div className="space-y-6">
       {/* Kartu Ringkasan Naskah Ujian & Statistik Bank Soal */}
-      <div className="rounded-xl border border-slate-200 bg-white p-5 shadow-2xs dark:border-slate-800 dark:bg-slate-900 sm:p-6">
+      <div className="rounded-xl border border-slate-200 bg-white p-5 shadow-2xs sm:p-6 dark:border-slate-800 dark:bg-slate-900">
         <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
           <div className="space-y-1">
             <div className="flex flex-wrap items-center gap-2">
@@ -63,7 +63,7 @@ export function QuestionBankManager({ exam, questions }: QuestionBankManagerProp
                 </Badge>
               )}
             </div>
-            <h1 className="text-xl font-bold tracking-tight text-slate-900 dark:text-slate-50 sm:text-2xl">
+            <h1 className="text-xl font-bold tracking-tight text-slate-900 sm:text-2xl dark:text-slate-50">
               {exam.title}
             </h1>
             {exam.description && (
@@ -88,7 +88,7 @@ export function QuestionBankManager({ exam, questions }: QuestionBankManagerProp
         </div>
 
         {/* Metrik Statistik Bank Soal */}
-        <div className="mt-6 grid grid-cols-2 gap-3 border-t border-slate-100 pt-5 dark:border-slate-800 sm:grid-cols-4">
+        <div className="mt-6 grid grid-cols-2 gap-3 border-t border-slate-100 pt-5 sm:grid-cols-4 dark:border-slate-800">
           <div className="flex items-center gap-3">
             <div className="flex size-9 items-center justify-center rounded-lg bg-indigo-50 text-indigo-600 dark:bg-indigo-950/50 dark:text-indigo-400">
               <BookOpen className="size-4" />

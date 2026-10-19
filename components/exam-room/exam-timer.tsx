@@ -41,7 +41,7 @@ export function ExamTimer({ serverEndTime, onExpire, className }: ExamTimerProps
 
   if (secondsRemaining === null) {
     return (
-      <div className={cn("flex items-center gap-2 px-3 py-1.5 rounded-lg bg-slate-100 dark:bg-slate-800 text-xs text-slate-500", className)}>
+      <div className={cn("flex items-center gap-2 rounded-lg bg-slate-100 px-3 py-1.5 text-xs text-slate-500 dark:bg-slate-800", className)}>
         <Clock className="size-4 animate-spin text-indigo-600 dark:text-indigo-400" />
         <span>Menghitung waktu...</span>
       </div>
@@ -63,11 +63,11 @@ export function ExamTimer({ serverEndTime, onExpire, className }: ExamTimerProps
     <div
       aria-label="Sisa Waktu Ujian"
       className={cn(
-        "flex items-center gap-2 px-3 sm:px-4 py-1.5 sm:py-2 rounded-lg border transition-colors",
-        isEnded && "bg-rose-100 dark:bg-rose-950/60 border-rose-300 dark:border-rose-800 text-rose-700 dark:text-rose-300",
-        isCritical && "bg-rose-50 dark:bg-rose-950/40 border-rose-300 dark:border-rose-900 text-rose-600 dark:text-rose-400 animate-pulse",
-        isWarning && "bg-amber-50 dark:bg-amber-950/40 border-amber-300 dark:border-amber-900 text-amber-700 dark:text-amber-300",
-        !isCritical && !isWarning && !isEnded && "bg-slate-100 dark:bg-slate-800 border-slate-200 dark:border-slate-700 text-slate-800 dark:text-slate-100",
+        "flex items-center gap-2 rounded-lg border px-3 py-1.5 transition-colors sm:px-4 sm:py-2",
+        isEnded && "border-rose-300 bg-rose-100 text-rose-700 dark:border-rose-800 dark:bg-rose-950/60 dark:text-rose-300",
+        isCritical && "animate-pulse border-rose-300 bg-rose-50 text-rose-600 dark:border-rose-900 dark:bg-rose-950/40 dark:text-rose-400",
+        isWarning && "border-amber-300 bg-amber-50 text-amber-700 dark:border-amber-900 dark:bg-amber-950/40 dark:text-amber-300",
+        !isCritical && !isWarning && !isEnded && "border-slate-200 bg-slate-100 text-slate-800 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100",
         className
       )}
     >
@@ -77,11 +77,11 @@ export function ExamTimer({ serverEndTime, onExpire, className }: ExamTimerProps
         <Clock className={cn("size-4 shrink-0", isWarning ? "text-amber-600 dark:text-amber-400" : "text-indigo-600 dark:text-indigo-400")} />
       )}
 
-      <div className="flex flex-col sm:flex-row sm:items-center sm:gap-2 leading-tight">
-        <span className="hidden sm:inline text-[11px] font-medium uppercase tracking-wider text-slate-500 dark:text-slate-400">
+      <div className="flex flex-col leading-tight sm:flex-row sm:items-center sm:gap-2">
+        <span className="hidden text-[11px] font-medium tracking-wider text-slate-500 uppercase sm:inline dark:text-slate-400">
           Sisa Waktu:
         </span>
-        <span className="font-mono text-base sm:text-lg font-bold tabular-nums tracking-tight">
+        <span className="font-mono text-base font-bold tracking-tight tabular-nums sm:text-lg">
           {formattedTime}
         </span>
       </div>
