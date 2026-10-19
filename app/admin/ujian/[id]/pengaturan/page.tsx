@@ -2,6 +2,7 @@ import { getAdminUser } from "@/actions/auth";
 import { getExamById } from "@/actions/exams";
 import { AdminHeader } from "@/components/admin/admin-header";
 import { ExamForm } from "@/components/admin/exam-form";
+import { RecalculateScoresButton } from "@/components/admin/scoring/recalculate-scores-button";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { ArrowLeft, BookOpen, KeyRound, Settings } from "lucide-react";
@@ -55,6 +56,7 @@ export default async function ExamSettingsPage({ params }: ExamSettingsPageProps
                 Kode Rujukan
               </Link>
             </Button>
+            <RecalculateScoresButton examId={exam.id} />
           </div>
         </div>
 

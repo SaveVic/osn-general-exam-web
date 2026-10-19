@@ -3,6 +3,7 @@ import { getExamById } from "@/actions/exams";
 import { getExamQuestions } from "@/actions/questions";
 import { AdminHeader } from "@/components/admin/admin-header";
 import { QuestionBankManager } from "@/components/admin/questions/question-bank-manager";
+import { RecalculateScoresButton } from "@/components/admin/scoring/recalculate-scores-button";
 import { Button } from "@/components/ui/button";
 import { KeyRound, Settings } from "lucide-react";
 import Link from "next/link";
@@ -70,6 +71,7 @@ export default async function ExamQuestionsPage({ params }: ExamQuestionsPagePro
                 Kode Rujukan
               </Link>
             </Button>
+            <RecalculateScoresButton examId={exam.id} />
           </div>
         </div>
 

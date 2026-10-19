@@ -12,6 +12,7 @@ import {
   type SubmitExamSessionInput,
 } from "@/lib/validations/session";
 import type { ExamRow, ExamSessionRow, Json, QuestionType, ReferralCodeRow } from "@/types/database";
+import { scoreExamSession } from "@/actions/scoring";
 
 export interface ClientQuestionItem {
   id: string;
@@ -663,6 +664,9 @@ export async function submitExamSessionAction(
         })
         .eq("id", sessionId);
 
+      // Mesin Penilaian Otomatis (ADM-SCOR-01): Hitung skor sesi yang dikunci
+      await scoreExamSession(sessionId);
+
       cookieStore.set("exam_token", "", { maxAge: 0, path: "/" });
 
       return {
@@ -703,6 +707,9 @@ export async function submitExamSessionAction(
         message: "Gagal memperbarui status pengumpulan ujian pada server.",
       };
     }
+
+    // Mesin Penilaian Otomatis (ADM-SCOR-01): Kalkulasi skor instan setelah pengumpulan
+    await scoreExamSession(sessionId);
 
     // Bersihkan cookie exam_token setelah berhasil dikumpulkan
     cookieStore.set("exam_token", "", { maxAge: 0, path: "/" });
