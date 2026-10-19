@@ -20,9 +20,11 @@ export function hashSessionToken(token: string): string {
 export function verifySessionToken(token: string, expectedHash: string): boolean {
   if (!token || !expectedHash) return false;
   const computedHash = hashSessionToken(token);
-  return crypto.timingSafeEqual(
-    Buffer.from(computedHash, "hex"),
-    Buffer.from(expectedHash, "hex")
-  );
+  const computedBuf = Buffer.from(computedHash, "hex");
+  const expectedBuf = Buffer.from(expectedHash, "hex");
+  if (computedBuf.length !== expectedBuf.length || computedBuf.length === 0) {
+    return false;
+  }
+  return crypto.timingSafeEqual(computedBuf, expectedBuf);
 }
 

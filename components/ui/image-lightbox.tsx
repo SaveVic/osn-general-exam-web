@@ -73,9 +73,9 @@ export function ImageLightbox({ src, alt, className, ...props }: ImageLightboxPr
 
   return (
     <>
-      {/* Thumbnail Gambar Inline */}
-      <figure className="group relative my-3 inline-block max-w-full">
-        <div
+      {/* Thumbnail Gambar Inline (menggunakan span agar valid di dalam tag <p> Markdown) */}
+      <span className="group relative my-3 inline-block max-w-full">
+        <span
           role="button"
           tabIndex={0}
           aria-label={`Perbesar diagram: ${alt || "Diagram soal"}`}
@@ -87,7 +87,7 @@ export function ImageLightbox({ src, alt, className, ...props }: ImageLightboxPr
             }
           }}
           className={cn(
-            "relative cursor-zoom-in overflow-hidden rounded-lg border border-slate-200 bg-slate-100 shadow-2xs transition-all duration-150",
+            "relative block cursor-zoom-in overflow-hidden rounded-lg border border-slate-200 bg-slate-100 shadow-2xs transition-all duration-150",
             "hover:border-indigo-400 dark:border-slate-800 dark:bg-slate-900 dark:hover:border-indigo-600",
             "focus-visible:ring-2 focus-visible:ring-indigo-500 focus-visible:ring-offset-2 focus-visible:outline-none dark:focus-visible:ring-offset-slate-950"
           )}
@@ -105,19 +105,19 @@ export function ImageLightbox({ src, alt, className, ...props }: ImageLightboxPr
           />
 
           {/* Badge Petunjuk Hover */}
-          <div className="absolute top-2 right-2 flex items-center gap-1 rounded-md bg-slate-900/80 px-2 py-1 text-[11px] font-medium text-white opacity-0 shadow-md backdrop-blur-xs transition-opacity duration-150 group-hover:opacity-100 dark:bg-slate-100 dark:text-slate-900">
+          <span className="absolute top-2 right-2 flex items-center gap-1 rounded-md bg-slate-900/80 px-2 py-1 text-[11px] font-medium text-white opacity-0 shadow-md backdrop-blur-xs transition-opacity duration-150 group-hover:opacity-100 dark:bg-slate-100 dark:text-slate-900">
             <ZoomIn className="size-3 text-indigo-400 dark:text-indigo-600" />
             <span>Perbesar</span>
-          </div>
-        </div>
+          </span>
+        </span>
 
         {/* Caption Gambar Alt jika tersedia */}
         {alt && (
-          <figcaption className="mt-1.5 text-center text-xs text-slate-500 italic dark:text-slate-400">
+          <span className="mt-1.5 block text-center text-xs text-slate-500 italic dark:text-slate-400">
             {alt}
-          </figcaption>
+          </span>
         )}
-      </figure>
+      </span>
 
       {/* Modal Lightbox Layar Penuh (Portal ke document.body) */}
       {isOpen && mounted &&
