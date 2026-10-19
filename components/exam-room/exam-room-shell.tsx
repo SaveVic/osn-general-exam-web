@@ -2,10 +2,12 @@
 
 import { useEffect, useState, useMemo, useCallback } from "react";
 import { useExamSessionStore } from "@/lib/stores/exam-session-store";
+import { useExamSyncEngine } from "@/hooks/use-exam-sync-engine";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { ExamTimer } from "./exam-timer";
+import { SyncStatusBadge } from "./sync-status-badge";
 import { QuestionCard } from "./question-card";
 import { BottomNavigationBar } from "./bottom-navigation-bar";
 import { FinishExamDialog } from "./finish-exam-dialog";
@@ -40,6 +42,12 @@ export function ExamRoomShell({ sessionId }: ExamRoomShellProps) {
   const setCurrentIndex = useExamSessionStore((state) => state.setCurrentIndex);
   const toggleFlag = useExamSessionStore((state) => state.toggleFlag);
   const setSubmitted = useExamSessionStore((state) => state.setSubmitted);
+
+  // Mesin sinkronisasi latar belakang F4-01 (Dual-Tier State Sync)
+  const { syncStatus, flushSync } = useExamSyncEngine(
+    sessionId,
+    isHydrated && storeSessionId === sessionId && !isSubmitted
+  );
 
   useEffect(() => {
     setIsHydrated(true);
@@ -165,7 +173,7 @@ export function ExamRoomShell({ sessionId }: ExamRoomShellProps) {
       {/* Bilah Atas Sticky (Header Ruang Ujian) */}
       <header className="sticky top-0 z-30 border-b border-slate-200 bg-white/95 px-3 py-2.5 shadow-2xs backdrop-blur-md sm:px-6 sm:py-3 dark:border-slate-800 dark:bg-slate-900/95">
         <div className="mx-auto flex max-w-7xl items-center justify-between gap-3 sm:gap-6">
-          {/* Sisi Kiri: Judul Ujian & Identitas Siswa */}
+          {/* Sisi Kiri: Judul Ujian, Indikator Sinkronisasi, & Identitas Siswa */}
           <div className="min-w-0">
             <div className="flex items-center gap-2">
               <Badge variant="outline" className="hidden border-indigo-200 text-xs text-indigo-700 sm:inline-flex dark:border-indigo-800 dark:text-indigo-300">
@@ -174,8 +182,9 @@ export function ExamRoomShell({ sessionId }: ExamRoomShellProps) {
               <h1 className="truncate text-sm font-bold text-slate-900 sm:text-base dark:text-slate-100">
                 {examTitle}
               </h1>
+              <SyncStatusBadge syncStatus={syncStatus} className="hidden md:inline-flex" />
             </div>
-            <div className="mt-0.5 flex items-center gap-2 text-xs text-slate-500 sm:gap-3 dark:text-slate-400">
+            <div className="mt-0.5 flex flex-wrap items-center gap-2 text-xs text-slate-500 sm:gap-3 dark:text-slate-400">
               <span className="flex items-center gap-1">
                 <User className="size-3" />
                 <span className="max-w-25 truncate sm:max-w-none">{studentName}</span>
@@ -185,6 +194,7 @@ export function ExamRoomShell({ sessionId }: ExamRoomShellProps) {
                 <GraduationCap className="size-3" />
                 <span>Kelas {studentClass}</span>
               </span>
+              <SyncStatusBadge syncStatus={syncStatus} className="md:hidden" />
             </div>
           </div>
 
@@ -302,6 +312,7 @@ export function ExamRoomShell({ sessionId }: ExamRoomShellProps) {
         unansweredCount={unansweredCount}
         flaggedCount={flaggedCount}
         onConfirmSubmit={() => {
+          void flushSync();
           setSubmitted(true);
         }}
       />

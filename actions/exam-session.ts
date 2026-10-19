@@ -3,7 +3,12 @@
 import { cookies } from "next/headers";
 import { createServiceClient } from "@/lib/supabase/admin";
 import { generateSessionToken, hashSessionToken, verifySessionToken } from "@/lib/security/session-token";
-import { startExamSessionSchema, type StartExamSessionInput } from "@/lib/validations/session";
+import {
+  startExamSessionSchema,
+  syncBatchAnswersSchema,
+  type StartExamSessionInput,
+  type SyncBatchAnswersInput,
+} from "@/lib/validations/session";
 import type { ExamRow, ExamSessionRow, Json, QuestionType, ReferralCodeRow } from "@/types/database";
 
 export interface ClientQuestionItem {
@@ -290,4 +295,105 @@ export async function verifyActiveSessionAction(
     };
   }
 }
+
+export interface SyncBatchAnswersResult {
+  success: boolean;
+  message?: string;
+  syncedAt?: string;
+  syncedCount?: number;
+}
+
+const NETWORK_GRACE_PERIOD_MS = 60 * 1000; // 60 detik toleransi keterlambatan jaringan
+
+/**
+ * Server Action F4-01 (EXM-SYNC-01):
+ * Menyinkronkan selisih jawaban siswa (batch diff) ke tabel session_answers melalui operasi UPSERT.
+ */
+export async function syncBatchAnswersAction(
+  payload: SyncBatchAnswersInput
+): Promise<SyncBatchAnswersResult> {
+  const parseResult = syncBatchAnswersSchema.safeParse(payload);
+  if (!parseResult.success) {
+    const errorMsg =
+      Object.values(parseResult.error.flatten().fieldErrors)[0]?.[0] ||
+      "Data sinkronisasi jawaban tidak valid.";
+    return {
+      success: false,
+      message: errorMsg,
+    };
+  }
+
+  const { sessionId, answers } = parseResult.data;
+
+  try {
+    // 1. Verifikasi keabsahan sesi aktif dan kecocokan token cookie HTTP-only
+    const authResult = await verifyActiveSessionAction(sessionId);
+    if (!authResult.valid || !authResult.session) {
+      return {
+        success: false,
+        message: authResult.message || "Sesi pengerjaan tidak sah atau telah ditutup.",
+      };
+    }
+
+    const { session, exam } = authResult;
+    const now = new Date();
+    const nowMs = now.getTime();
+
+    // 2. Verifikasi otoritas waktu server dengan toleransi keterlambatan jaringan 60 detik
+    if (exam) {
+      const startedMs = new Date(session.started_at).getTime();
+      const durationMs = exam.duration_minutes * 60 * 1000;
+      const examEndMs = new Date(exam.ends_at).getTime();
+      const deadlineMs = Math.min(startedMs + durationMs, examEndMs);
+
+      if (nowMs > deadlineMs + NETWORK_GRACE_PERIOD_MS) {
+        return {
+          success: false,
+          message: "Batas waktu pengerjaan ujian telah berakhir.",
+        };
+      }
+    }
+
+    // 3. Lakukan operasi UPSERT batch ke tabel session_answers
+    const supabase = createServiceClient();
+    const nowIso = now.toISOString();
+
+    const upsertRows = answers.map((item) => ({
+      session_id: sessionId,
+      question_id: item.questionId,
+      answer_value: item.answerValue ?? null,
+      is_flagged: Boolean(item.isFlagged),
+      last_updated_at: nowIso,
+    }));
+
+    const { error: upsertError } = await supabase
+      .from("session_answers")
+      .upsert(upsertRows, {
+        onConflict: "session_id,question_id",
+      });
+
+    if (upsertError) {
+      console.error("Gagal menyinkronkan jawaban ke database:", upsertError.message);
+      return {
+        success: false,
+        message: "Gagal menyinkronkan jawaban ke server. Data tetap aman di perangkat Anda.",
+      };
+    }
+
+    return {
+      success: true,
+      syncedAt: nowIso,
+      syncedCount: upsertRows.length,
+    };
+  } catch (err) {
+    console.error("Kesalahan internal saat sinkronisasi jawaban:", err);
+    return {
+      success: false,
+      message: "Terjadi gangguan jaringan saat menyinkronkan jawaban.",
+    };
+  }
+}
+
+export { syncBatchAnswersAction as syncBatchAnswers };
+
 

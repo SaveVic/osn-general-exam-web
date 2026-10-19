@@ -20,3 +20,18 @@ export const startExamSessionSchema = z.object({
 
 export type StartExamSessionInput = z.infer<typeof startExamSessionSchema>;
 
+export const syncAnswerItemSchema = z.object({
+  questionId: z.string().trim().min(1, "ID butir soal wajib diisi"),
+  answerValue: z.any().nullable(),
+  isFlagged: z.boolean().default(false),
+});
+
+export const syncBatchAnswersSchema = z.object({
+  sessionId: z.string().trim().min(1, "ID sesi ujian wajib diisi"),
+  answers: z
+    .array(syncAnswerItemSchema)
+    .min(1, "Tidak ada perubahan jawaban untuk disinkronkan"),
+});
+
+export type SyncAnswerItem = z.infer<typeof syncAnswerItemSchema>;
+export type SyncBatchAnswersInput = z.infer<typeof syncBatchAnswersSchema>;

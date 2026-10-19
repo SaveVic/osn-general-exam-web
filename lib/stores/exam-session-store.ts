@@ -3,6 +3,8 @@ import { persist, createJSONStorage } from "zustand/middleware";
 import type { ClientQuestionItem } from "@/actions/exam-session";
 import type { Json } from "@/types/database";
 
+export type ExamSyncStatus = "local" | "syncing" | "synced" | "error";
+
 export interface ExamSessionState {
   sessionId: string | null;
   examId: string | null;
@@ -16,6 +18,9 @@ export interface ExamSessionState {
   currentIndex: number;
   answersMap: Record<string, Json>;
   flaggedMap: Record<string, boolean>;
+  dirtyQuestionIds: string[];
+  syncStatus: ExamSyncStatus;
+  lastSyncedAt: string | null;
   isSubmitted: boolean;
 }
 
@@ -37,11 +42,17 @@ export interface ExamSessionActions {
   setCurrentIndex: (index: number) => void;
   nextQuestion: () => void;
   prevQuestion: () => void;
+  setSyncStatus: (status: ExamSyncStatus) => void;
+  markQuestionsSynced: (questionIds: string[], syncedAt: string) => void;
   setSubmitted: (isSubmitted: boolean) => void;
   clearSession: () => void;
 }
 
 export type ExamSessionStore = ExamSessionState & ExamSessionActions;
+
+function addUniqueQuestionId(list: string[], questionId: string): string[] {
+  return list.includes(questionId) ? list : [...list, questionId];
+}
 
 export const useExamSessionStore = create<ExamSessionStore>()(
   persist(
@@ -58,6 +69,9 @@ export const useExamSessionStore = create<ExamSessionStore>()(
       currentIndex: 0,
       answersMap: {},
       flaggedMap: {},
+      dirtyQuestionIds: [],
+      syncStatus: "synced",
+      lastSyncedAt: null,
       isSubmitted: false,
 
       initSession: (data) =>
@@ -74,6 +88,9 @@ export const useExamSessionStore = create<ExamSessionStore>()(
           currentIndex: 0,
           answersMap: {},
           flaggedMap: {},
+          dirtyQuestionIds: [],
+          syncStatus: "synced",
+          lastSyncedAt: null,
           isSubmitted: false,
         }),
 
@@ -83,6 +100,8 @@ export const useExamSessionStore = create<ExamSessionStore>()(
             ...state.answersMap,
             [questionId]: answerValue,
           },
+          dirtyQuestionIds: addUniqueQuestionId(state.dirtyQuestionIds, questionId),
+          syncStatus: "local",
         })),
 
       clearAnswer: (questionId) =>
@@ -91,6 +110,8 @@ export const useExamSessionStore = create<ExamSessionStore>()(
           delete nextAnswers[questionId];
           return {
             answersMap: nextAnswers,
+            dirtyQuestionIds: addUniqueQuestionId(state.dirtyQuestionIds, questionId),
+            syncStatus: "local",
           };
         }),
 
@@ -100,6 +121,8 @@ export const useExamSessionStore = create<ExamSessionStore>()(
             ...state.flaggedMap,
             [questionId]: !state.flaggedMap[questionId],
           },
+          dirtyQuestionIds: addUniqueQuestionId(state.dirtyQuestionIds, questionId),
+          syncStatus: "local",
         })),
 
       setCurrentIndex: (index) => {
@@ -123,6 +146,20 @@ export const useExamSessionStore = create<ExamSessionStore>()(
         }
       },
 
+      setSyncStatus: (syncStatus) => set({ syncStatus }),
+
+      markQuestionsSynced: (questionIds, syncedAt) =>
+        set((state) => {
+          const remainingDirty = state.dirtyQuestionIds.filter(
+            (id) => !questionIds.includes(id)
+          );
+          return {
+            dirtyQuestionIds: remainingDirty,
+            lastSyncedAt: syncedAt,
+            syncStatus: remainingDirty.length === 0 ? "synced" : "local",
+          };
+        }),
+
       setSubmitted: (isSubmitted) => set({ isSubmitted }),
 
       clearSession: () =>
@@ -139,6 +176,9 @@ export const useExamSessionStore = create<ExamSessionStore>()(
           currentIndex: 0,
           answersMap: {},
           flaggedMap: {},
+          dirtyQuestionIds: [],
+          syncStatus: "synced",
+          lastSyncedAt: null,
           isSubmitted: false,
         }),
     }),
@@ -148,4 +188,3 @@ export const useExamSessionStore = create<ExamSessionStore>()(
     }
   )
 );
-
