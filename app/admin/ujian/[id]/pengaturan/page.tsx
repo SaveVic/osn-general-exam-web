@@ -5,7 +5,7 @@ import { ExamForm } from "@/components/admin/exam-form";
 import { RecalculateScoresButton } from "@/components/admin/scoring/recalculate-scores-button";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { ArrowLeft, BookOpen, FileEdit, KeyRound, Settings } from "lucide-react";
+import { ArrowLeft, BarChart3, BookOpen, FileEdit, KeyRound, Settings } from "lucide-react";
 import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
 
@@ -43,7 +43,7 @@ export default async function ExamSettingsPage({ params }: ExamSettingsPageProps
             Kembali ke Dasbor
           </Link>
 
-          <div className="flex items-center gap-2">
+          <div className="flex flex-wrap items-center gap-2">
             <Button asChild variant="outline" size="sm" className="gap-1.5 text-xs">
               <Link href={`/admin/ujian/${exam.id}/soal`}>
                 <BookOpen className="size-3.5 text-indigo-600 dark:text-indigo-400" />
@@ -60,6 +60,12 @@ export default async function ExamSettingsPage({ params }: ExamSettingsPageProps
               <Link href={`/admin/ujian/${exam.id}/penilaian`}>
                 <FileEdit className="size-3.5 text-emerald-600 dark:text-emerald-400" />
                 Penilaian Manual
+              </Link>
+            </Button>
+            <Button asChild variant="outline" size="sm" className="gap-1.5 text-xs">
+              <Link href={`/admin/ujian/${exam.id}/laporan`}>
+                <BarChart3 className="size-3.5 text-indigo-600 dark:text-indigo-400" />
+                Laporan Nilai
               </Link>
             </Button>
             <RecalculateScoresButton examId={exam.id} />

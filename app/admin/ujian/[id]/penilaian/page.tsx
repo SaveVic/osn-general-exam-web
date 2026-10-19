@@ -4,7 +4,7 @@ import { AdminHeader } from "@/components/admin/admin-header";
 import { ManualEvaluationView } from "@/components/admin/evaluation/manual-evaluation-view";
 import { RecalculateScoresButton } from "@/components/admin/scoring/recalculate-scores-button";
 import { Button } from "@/components/ui/button";
-import { BookOpen, FileEdit, KeyRound, Settings } from "lucide-react";
+import { BarChart3, BookOpen, FileEdit, KeyRound, Settings } from "lucide-react";
 import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
 
@@ -74,6 +74,12 @@ export default async function ExamEvaluationPage({ params }: ExamEvaluationPageP
               <Link href={`/admin/ujian/${exam.id}/kode-rujukan`}>
                 <KeyRound className="size-3.5 text-amber-600 dark:text-amber-400" />
                 Kode Rujukan
+              </Link>
+            </Button>
+            <Button asChild variant="outline" size="sm" className="gap-1.5 text-xs">
+              <Link href={`/admin/ujian/${exam.id}/laporan`}>
+                <BarChart3 className="size-3.5 text-indigo-600 dark:text-indigo-400" />
+                Laporan Nilai
               </Link>
             </Button>
             <RecalculateScoresButton examId={exam.id} />

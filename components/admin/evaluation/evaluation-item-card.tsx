@@ -205,11 +205,11 @@ export function EvaluationItemCard({
             <span>Jawaban Peserta:</span>
           </div>
           {hasAnswered ? (
-            <p className='mt-1.5 whitespace-pre-wrap font-mono text-sm text-slate-900 dark:text-slate-100'>
+            <p className='mt-1.5 font-mono text-sm whitespace-pre-wrap text-slate-900 dark:text-slate-100'>
               {submission.studentAnswerText}
             </p>
           ) : (
-            <p className='mt-1.5 text-xs italic text-slate-400 dark:text-slate-500'>
+            <p className='mt-1.5 text-xs text-slate-400 italic dark:text-slate-500'>
               Peserta tidak mengisi lembar jawaban ini (kosong).
             </p>
           )}

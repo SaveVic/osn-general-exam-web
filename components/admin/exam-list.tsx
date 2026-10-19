@@ -16,6 +16,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import {
+  BarChart3,
   BookOpen,
   Calendar,
   Clock,
@@ -221,6 +222,13 @@ export function ExamList({ exams }: ExamListProps) {
                   <Link href={`/admin/ujian/${exam.id}/kode-rujukan`}>
                     <KeyRound className="size-3.5 text-amber-600 dark:text-amber-400" />
                     Kode
+                  </Link>
+                </Button>
+
+                <Button asChild variant="outline" size="sm" className="gap-1.5 text-xs">
+                  <Link href={`/admin/ujian/${exam.id}/laporan`}>
+                    <BarChart3 className="size-3.5 text-emerald-600 dark:text-emerald-400" />
+                    Laporan
                   </Link>
                 </Button>
 
