@@ -6,15 +6,21 @@ import remarkMath from "remark-math";
 import remarkGfm from "remark-gfm";
 import rehypeKatex from "rehype-katex";
 import rehypeHighlight from "rehype-highlight";
+import { ImageLightbox } from "./image-lightbox";
 import { cn } from "@/lib/utils";
 import "highlight.js/styles/github-dark.css";
 
 interface MarkdownRendererProps {
   content: string;
   className?: string;
+  enableLightbox?: boolean;
 }
 
-export function MarkdownRenderer({ content, className }: MarkdownRendererProps) {
+export function MarkdownRenderer({
+  content,
+  className,
+  enableLightbox = true,
+}: MarkdownRendererProps) {
   if (!content || !content.trim()) {
     return (
       <div className={cn("text-sm text-slate-400 italic", className)}>
@@ -48,10 +54,23 @@ export function MarkdownRenderer({ content, className }: MarkdownRendererProps) 
           [rehypeKatex, { throwOnError: false, errorColor: "#ef4444" }],
           rehypeHighlight,
         ]}
+        components={{
+          img: ({ src, alt, ...imgProps }) => {
+            const imageSrc = typeof src === "string" ? src : undefined;
+            if (!imageSrc) return null;
+
+            if (enableLightbox) {
+              return <ImageLightbox src={imageSrc} alt={alt} {...imgProps} />;
+            }
+            return (
+              // eslint-disable-next-line @next/next/no-img-element
+              <img src={imageSrc} alt={alt || "Gambar Soal"} {...imgProps} />
+            );
+          },
+        }}
       >
         {content}
       </ReactMarkdown>
     </div>
   );
 }
-
