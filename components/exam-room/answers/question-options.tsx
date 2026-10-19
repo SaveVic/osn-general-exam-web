@@ -10,9 +10,10 @@ import { ShortAnswerInput } from "./short-answer-input";
 
 interface QuestionOptionsProps {
   question: ClientQuestionItem;
+  disabled?: boolean;
 }
 
-export function QuestionOptions({ question }: QuestionOptionsProps) {
+export function QuestionOptions({ question, disabled = false }: QuestionOptionsProps) {
   const currentAnswer = useExamSessionStore((state) => state.answersMap[question.id]);
   const setAnswer = useExamSessionStore((state) => state.setAnswer);
   const clearAnswer = useExamSessionStore((state) => state.clearAnswer);
@@ -37,10 +38,13 @@ export function QuestionOptions({ question }: QuestionOptionsProps) {
         questionId={question.id}
         options={parsedOptions}
         selectedOptionId={selectedOptionId}
+        disabled={disabled}
         onSelectOption={(optionId) => {
+          if (disabled) return;
           setAnswer(question.id, { selected: optionId });
         }}
         onClearOption={() => {
+          if (disabled) return;
           clearAnswer(question.id);
         }}
       />
@@ -58,7 +62,9 @@ export function QuestionOptions({ question }: QuestionOptionsProps) {
         questionId={question.id}
         options={parsedOptions}
         selectedOptionIds={selectedOptionIds}
+        disabled={disabled}
         onToggleOption={(optionId) => {
+          if (disabled) return;
           const next = selectedOptionIds.includes(optionId)
             ? selectedOptionIds.filter((id) => id !== optionId)
             : [...selectedOptionIds, optionId];
@@ -70,6 +76,7 @@ export function QuestionOptions({ question }: QuestionOptionsProps) {
           }
         }}
         onClearOptions={() => {
+          if (disabled) return;
           clearAnswer(question.id);
         }}
       />
@@ -88,7 +95,9 @@ export function QuestionOptions({ question }: QuestionOptionsProps) {
       <ShortAnswerInput
         questionId={question.id}
         currentText={currentText}
+        disabled={disabled}
         onChangeText={(text) => {
+          if (disabled) return;
           if (!text.trim()) {
             clearAnswer(question.id);
           } else {
@@ -96,6 +105,7 @@ export function QuestionOptions({ question }: QuestionOptionsProps) {
           }
         }}
         onClearText={() => {
+          if (disabled) return;
           clearAnswer(question.id);
         }}
       />

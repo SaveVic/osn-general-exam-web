@@ -8,6 +8,7 @@ import { Check, Edit3, RotateCcw } from "lucide-react";
 interface ShortAnswerInputProps {
   questionId: string;
   currentText?: string;
+  disabled?: boolean;
   onChangeText: (text: string) => void;
   onClearText: () => void;
 }
@@ -15,6 +16,7 @@ interface ShortAnswerInputProps {
 export function ShortAnswerInput({
   questionId,
   currentText = "",
+  disabled = false,
   onChangeText,
   onClearText,
 }: ShortAnswerInputProps) {
@@ -26,6 +28,7 @@ export function ShortAnswerInput({
   }, [questionId, currentText]);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (disabled) return;
     const val = e.target.value;
     setLocalValue(val);
     onChangeText(val);
@@ -53,9 +56,11 @@ export function ShortAnswerInput({
           id={`input-answer-${questionId}`}
           type="text"
           value={localValue}
+          disabled={disabled}
+          readOnly={disabled}
           onChange={handleChange}
-          placeholder="Ketik jawaban akhir Anda di sini..."
-          className="h-12 border-slate-300 bg-slate-50 px-4 font-mono text-base focus-visible:ring-indigo-500 dark:border-slate-700 dark:bg-slate-950/60"
+          placeholder={disabled ? "Waktu ujian telah berakhir (Terkunci)" : "Ketik jawaban akhir Anda di sini..."}
+          className="h-12 border-slate-300 bg-slate-50 px-4 font-mono text-base focus-visible:ring-indigo-500 disabled:cursor-not-allowed disabled:opacity-70 dark:border-slate-700 dark:bg-slate-950/60"
           autoComplete="off"
           spellCheck={false}
         />
@@ -73,7 +78,7 @@ export function ShortAnswerInput({
           )}
         </div>
 
-        {hasValue && (
+        {!disabled && hasValue && (
           <Button
             type="button"
             variant="ghost"

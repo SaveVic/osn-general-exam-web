@@ -25,18 +25,26 @@ describe("F3-02: Komponen Penghitung Waktu Riil (ExamTimer)", () => {
     vi.setSystemTime(now);
 
     const onExpire = vi.fn();
-    // Sisa 65 detik (masuk zona kritis <= 120 detik)
+    // Sisa 65 detik (masuk zona peringatan <= 300 detik)
     const serverEndTime = new Date(now.getTime() + 65 * 1000).toISOString();
 
     render(<ExamTimer serverEndTime={serverEndTime} onExpire={onExpire} />);
 
     expect(screen.getByText("00:01:05")).toBeInTheDocument();
     const timerBox = screen.getByLabelText("Sisa Waktu Ujian");
+    expect(timerBox.className).toContain("border-amber-300");
+
+    // Majukan 5 detik (masuk zona kritis <= 60 detik)
+    act(() => {
+      vi.advanceTimersByTime(5 * 1000);
+    });
+
+    expect(screen.getByText("00:01:00")).toBeInTheDocument();
     expect(timerBox.className).toContain("animate-pulse");
 
-    // Majukan 65 detik hingga waktu habis
+    // Majukan 60 detik hingga waktu habis
     act(() => {
-      vi.advanceTimersByTime(65 * 1000);
+      vi.advanceTimersByTime(60 * 1000);
     });
 
     expect(screen.getByText("00:00:00")).toBeInTheDocument();

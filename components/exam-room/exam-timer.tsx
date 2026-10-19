@@ -60,9 +60,11 @@ export function ExamTimer({
   const pad = (n: number) => n.toString().padStart(2, "0");
   const formattedTime = `${pad(hours)}:${pad(minutes)}:${pad(seconds)}`;
 
-  // Status visual penunjuk waktu
-  const isCritical = secondsRemaining > 0 && secondsRemaining <= 120; // <= 2 menit
-  const isWarning = secondsRemaining > 120 && secondsRemaining <= 600; // <= 10 menit
+  // Status visual penunjuk waktu sesuai spesifikasi F4-03:
+  // <= 1 menit (60 detik): merah berkedip lembut (animate-pulse)
+  // <= 5 menit (300 detik): kuning peringatan
+  const isCritical = secondsRemaining > 0 && secondsRemaining <= 60;
+  const isWarning = secondsRemaining > 60 && secondsRemaining <= 300;
   const isEnded = secondsRemaining === 0;
 
   return (

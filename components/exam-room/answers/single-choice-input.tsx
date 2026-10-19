@@ -11,6 +11,7 @@ interface SingleChoiceInputProps {
   questionId: string;
   options: ChoiceOption[];
   selectedOptionId?: string | null;
+  disabled?: boolean;
   onSelectOption: (optionId: string) => void;
   onClearOption: () => void;
 }
@@ -18,6 +19,7 @@ interface SingleChoiceInputProps {
 export function SingleChoiceInput({
   options,
   selectedOptionId,
+  disabled = false,
   onSelectOption,
   onClearOption,
 }: SingleChoiceInputProps) {
@@ -33,10 +35,12 @@ export function SingleChoiceInput({
               type="button"
               role="radio"
               aria-checked={isSelected}
+              disabled={disabled}
               onClick={() => onSelectOption(option.id)}
               className={cn(
                 "flex w-full cursor-pointer items-start gap-3 rounded-xl border p-3.5 text-left transition-all duration-150 select-none sm:gap-4 sm:p-4",
                 "focus-visible:ring-2 focus-visible:ring-indigo-500 focus-visible:ring-offset-2 focus-visible:outline-none",
+                disabled && "cursor-not-allowed opacity-70",
                 isSelected
                   ? "border-indigo-600 bg-indigo-50/70 shadow-xs ring-1 ring-indigo-600/30 dark:border-indigo-500 dark:bg-indigo-950/40 dark:ring-indigo-500/30"
                   : "border-slate-200 bg-white hover:border-indigo-300 hover:bg-slate-50/60 dark:border-slate-800 dark:bg-slate-900/60 dark:hover:border-indigo-700 dark:hover:bg-slate-900"
@@ -72,7 +76,7 @@ export function SingleChoiceInput({
       </div>
 
       {/* Tombol Hapus Pilihan Jawaban */}
-      {selectedOptionId && (
+      {!disabled && selectedOptionId && (
         <div className="flex justify-end pt-1">
           <Button
             type="button"

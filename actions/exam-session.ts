@@ -6,8 +6,10 @@ import { generateSessionToken, hashSessionToken, verifySessionToken } from "@/li
 import {
   startExamSessionSchema,
   syncBatchAnswersSchema,
+  submitExamSessionSchema,
   type StartExamSessionInput,
   type SyncBatchAnswersInput,
+  type SubmitExamSessionInput,
 } from "@/lib/validations/session";
 import type { ExamRow, ExamSessionRow, Json, QuestionType, ReferralCodeRow } from "@/types/database";
 
@@ -527,5 +529,163 @@ export async function recoverExamSessionAction(
 }
 
 export { recoverExamSessionAction as recoverExamSession };
+
+/**
+ * Menghitung batas akhir waktu pengerjaan sesi ujian (serverEndTime)
+ * Sesi berakhir pada min(startedAt + duration, examEndsAt)
+ */
+export function calculateSessionDeadline(
+  startedAt: string,
+  durationMinutes: number,
+  examEndsAt?: string | null
+): string {
+  const startedMs = new Date(startedAt).getTime();
+  const durationMs = durationMinutes * 60 * 1000;
+  const nominalDeadline = startedMs + durationMs;
+
+  if (!examEndsAt) {
+    return new Date(nominalDeadline).toISOString();
+  }
+
+  const examEndMs = new Date(examEndsAt).getTime();
+  if (isNaN(examEndMs)) {
+    return new Date(nominalDeadline).toISOString();
+  }
+
+  const deadlineMs = Math.min(nominalDeadline, examEndMs);
+  return new Date(deadlineMs).toISOString();
+}
+
+export interface SubmitExamSessionResult {
+  success: boolean;
+  message?: string;
+  alreadyCompleted?: boolean;
+  submittedAt?: string;
+  error?: string;
+}
+
+/**
+ * Server Action F4-03 & F4-04 (EXM-TIME-01 & EXM-SUBM-01):
+ * Mengumpulkan lembar jawaban peserta ujian secara otomatis saat waktu habis atau secara manual.
+ */
+export async function submitExamSessionAction(
+  payload: SubmitExamSessionInput
+): Promise<SubmitExamSessionResult> {
+  const parseResult = submitExamSessionSchema.safeParse(payload);
+  if (!parseResult.success) {
+    const errorMsg =
+      Object.values(parseResult.error.flatten().fieldErrors)[0]?.[0] ||
+      "Data pengumpulan ujian tidak valid.";
+    return {
+      success: false,
+      message: errorMsg,
+    };
+  }
+
+  const { sessionId, finalAnswers } = parseResult.data;
+
+  try {
+    const cookieStore = await cookies();
+    const examToken = cookieStore.get("exam_token")?.value;
+
+    if (!examToken) {
+      return {
+        success: false,
+        error: "UNAUTHORIZED",
+        message: "Token autentikasi sesi ujian tidak ditemukan pada peramban.",
+      };
+    }
+
+    const supabase = createServiceClient();
+    const { data: session, error } = await supabase
+      .from("exam_sessions")
+      .select("*, exams(*)")
+      .eq("id", sessionId)
+      .maybeSingle();
+
+    if (error || !session) {
+      return {
+        success: false,
+        message: "Sesi ujian tidak ditemukan pada sistem.",
+      };
+    }
+
+    const sessionRow = session as ExamSessionRow & { exams: ExamRow | null };
+
+    // Verifikasi kesesuaian token
+    const isTokenMatch = verifySessionToken(examToken, sessionRow.session_token_hash);
+    if (!isTokenMatch) {
+      return {
+        success: false,
+        error: "UNAUTHORIZED",
+        message: "Token autentikasi sesi tidak cocok dengan catatan sistem.",
+      };
+    }
+
+    // Jika sudah selesai sebelumnya (idempotency)
+    if (sessionRow.is_completed) {
+      // Pastikan cookie dibersihkan
+      cookieStore.set("exam_token", "", { maxAge: 0, path: "/" });
+      return {
+        success: true,
+        alreadyCompleted: true,
+        message: "Sesi ujian ini telah diselesaikan sebelumnya.",
+        submittedAt: sessionRow.submitted_at ?? sessionRow.started_at,
+      };
+    }
+
+    const now = new Date();
+    const nowIso = now.toISOString();
+
+    // Simpan finalAnswers jika ada
+    if (finalAnswers && finalAnswers.length > 0) {
+      const upsertRows = finalAnswers.map((item) => ({
+        session_id: sessionId,
+        question_id: item.questionId,
+        answer_value: item.answerValue ?? null,
+        is_flagged: Boolean(item.isFlagged),
+        last_updated_at: nowIso,
+      }));
+
+      await supabase.from("session_answers").upsert(upsertRows, {
+        onConflict: "session_id,question_id",
+      });
+    }
+
+    // Update status exam_sessions menjadi is_completed = true, submitted_at = now
+    const { error: updateError } = await supabase
+      .from("exam_sessions")
+      .update({
+        is_completed: true,
+        submitted_at: nowIso,
+      })
+      .eq("id", sessionId);
+
+    if (updateError) {
+      console.error("Gagal menyelesaikan sesi ujian:", updateError.message);
+      return {
+        success: false,
+        message: "Gagal memperbarui status pengumpulan ujian pada server.",
+      };
+    }
+
+    // Bersihkan cookie exam_token setelah berhasil dikumpulkan
+    cookieStore.set("exam_token", "", { maxAge: 0, path: "/" });
+
+    return {
+      success: true,
+      message: "Ujian berhasil diselesaikan dan lembar jawaban tersimpan.",
+      submittedAt: nowIso,
+    };
+  } catch (err) {
+    console.error("Kesalahan internal saat pengumpulan ujian:", err);
+    return {
+      success: false,
+      message: "Terjadi kesalahan sistem saat mengumpulkan lembar ujian.",
+    };
+  }
+}
+
+export { submitExamSessionAction as submitExamSession };
 
 

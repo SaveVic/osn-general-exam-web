@@ -13,6 +13,7 @@ interface QuestionCardProps {
   questionNumber: number;
   totalQuestions: number;
   isFlagged: boolean;
+  disabled?: boolean;
   className?: string;
 }
 
@@ -21,6 +22,7 @@ export function QuestionCard({
   questionNumber,
   totalQuestions,
   isFlagged,
+  disabled = false,
   className,
 }: QuestionCardProps) {
   // Label tipe soal dalam Bahasa Indonesia
@@ -88,7 +90,7 @@ export function QuestionCard({
           </div>
 
           {/* Opsi Jawaban Interaktif */}
-          <QuestionOptions question={question} />
+          <QuestionOptions question={question} disabled={disabled} />
         </div>
       </div>
     </div>

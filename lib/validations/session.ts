@@ -35,3 +35,10 @@ export const syncBatchAnswersSchema = z.object({
 
 export type SyncAnswerItem = z.infer<typeof syncAnswerItemSchema>;
 export type SyncBatchAnswersInput = z.infer<typeof syncBatchAnswersSchema>;
+
+export const submitExamSessionSchema = z.object({
+  sessionId: z.string().trim().min(1, "ID sesi ujian wajib diisi"),
+  finalAnswers: z.array(syncAnswerItemSchema).optional().default([]),
+});
+
+export type SubmitExamSessionInput = z.infer<typeof submitExamSessionSchema>;

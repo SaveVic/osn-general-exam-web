@@ -9,6 +9,7 @@ interface BottomNavigationBarProps {
   currentIndex: number;
   totalQuestions: number;
   isFlagged: boolean;
+  isLocked?: boolean;
   onPrev: () => void;
   onNext: () => void;
   onToggleFlag: () => void;
@@ -21,6 +22,7 @@ export function BottomNavigationBar({
   currentIndex,
   totalQuestions,
   isFlagged,
+  isLocked = false,
   onPrev,
   onNext,
   onToggleFlag,
@@ -73,9 +75,11 @@ export function BottomNavigationBar({
             type="button"
             variant="outline"
             size="default"
+            disabled={isLocked}
             onClick={onToggleFlag}
             className={cn(
               "h-10 gap-1.5 px-3 font-medium transition-all select-none sm:px-5",
+              isLocked && "cursor-not-allowed opacity-60",
               isFlagged
                 ? "border-amber-600 bg-amber-500 text-white shadow-xs hover:bg-amber-600 dark:border-amber-500"
                 : "border-slate-300 text-slate-700 hover:border-amber-400 hover:bg-amber-50/50 hover:text-amber-700 dark:border-slate-700 dark:text-slate-300 dark:hover:bg-amber-950/30 dark:hover:text-amber-300"
@@ -92,8 +96,9 @@ export function BottomNavigationBar({
           <Button
             type="button"
             size="default"
+            disabled={isLocked}
             onClick={onRequestFinish}
-            className="h-10 gap-1.5 bg-emerald-600 px-3 text-white shadow-xs hover:bg-emerald-700 sm:px-5"
+            className="h-10 gap-1.5 bg-emerald-600 px-3 text-white shadow-xs hover:bg-emerald-700 disabled:cursor-not-allowed disabled:opacity-60 sm:px-5"
           >
             <span className="hidden sm:inline">Selesaikan Ujian</span>
             <span className="sm:hidden">Selesai</span>

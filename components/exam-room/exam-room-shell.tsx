@@ -5,6 +5,7 @@ import { useExamSessionStore } from "@/lib/stores/exam-session-store";
 import { useExamSyncEngine } from "@/hooks/use-exam-sync-engine";
 import {
   recoverExamSessionAction,
+  submitExamSessionAction,
   type RecoverExamSessionData,
 } from "@/actions/exam-session";
 import { Button } from "@/components/ui/button";
@@ -15,6 +16,7 @@ import { SyncStatusBadge } from "./sync-status-badge";
 import { QuestionCard } from "./question-card";
 import { BottomNavigationBar } from "./bottom-navigation-bar";
 import { FinishExamDialog } from "./finish-exam-dialog";
+import { TimeExpiredDialog } from "./time-expired-dialog";
 import { QuestionPaletteSidebar } from "./palette/question-palette-sidebar";
 import { QuestionPaletteSheet } from "./palette/question-palette-sheet";
 import { isQuestionAnswered } from "./palette/question-palette-grid";
@@ -29,6 +31,9 @@ interface ExamRoomShellProps {
 export function ExamRoomShell({ sessionId, initialRecoveryData }: ExamRoomShellProps) {
   const [isHydrated, setIsHydrated] = useState(false);
   const [isRecovering, setIsRecovering] = useState(false);
+  const [isTimeExpired, setIsTimeExpired] = useState(false);
+  const [isAutoSubmitting, setIsAutoSubmitting] = useState(false);
+  const [autoSubmitError, setAutoSubmitError] = useState<string | null>(null);
   const [isFinishDialogOpen, setIsFinishDialogOpen] = useState(false);
   const [isPaletteSheetOpen, setIsPaletteSheetOpen] = useState(false);
 
@@ -52,7 +57,7 @@ export function ExamRoomShell({ sessionId, initialRecoveryData }: ExamRoomShellP
   const recoverSession = useExamSessionStore((state) => state.recoverSession);
 
   // Mesin sinkronisasi latar belakang F4-01 (Dual-Tier State Sync)
-  const { syncStatus, flushSync } = useExamSyncEngine(
+  const { syncStatus } = useExamSyncEngine(
     sessionId,
     isHydrated && storeSessionId === sessionId && !isSubmitted
   );
@@ -108,6 +113,39 @@ export function ExamRoomShell({ sessionId, initialRecoveryData }: ExamRoomShellP
   const flaggedCount = useMemo(() => {
     return questions.filter((q) => Boolean(flaggedMap[q.id])).length;
   }, [questions, flaggedMap]);
+
+  // Handler pengumpulan otomatis saat waktu pengerjaan habis (F4-03: EXM-TIME-01)
+  const handleAutoSubmit = useCallback(async () => {
+    setIsAutoSubmitting(true);
+    setAutoSubmitError(null);
+
+    const currentAnswers = useExamSessionStore.getState().answersMap;
+    const currentFlagged = useExamSessionStore.getState().flaggedMap;
+    const currentQuestions = useExamSessionStore.getState().questions;
+
+    const finalAnswers = currentQuestions.map((q) => ({
+      questionId: q.id,
+      answerValue: currentAnswers[q.id] ?? null,
+      isFlagged: Boolean(currentFlagged[q.id]),
+    }));
+
+    try {
+      const res = await submitExamSessionAction({
+        sessionId,
+        finalAnswers,
+      });
+
+      if (res.success) {
+        setSubmitted(true);
+      } else {
+        setAutoSubmitError(res.message || "Gagal mengumpulkan lembar jawaban secara otomatis.");
+      }
+    } catch {
+      setAutoSubmitError("Terjadi gangguan koneksi saat mengumpulkan lembar jawaban.");
+    } finally {
+      setIsAutoSubmitting(false);
+    }
+  }, [sessionId, setSubmitted]);
 
   // Handler navigasi keyboard (ArrowLeft / ArrowRight)
   const handleKeyDown = useCallback(
@@ -250,7 +288,12 @@ export function ExamRoomShell({ sessionId, initialRecoveryData }: ExamRoomShellP
             <ExamTimer
               serverEndTime={serverEndTime}
               serverTimeOffsetMs={serverTimeOffsetMs}
-              onExpire={() => setIsFinishDialogOpen(true)}
+              onExpire={() => {
+                setIsTimeExpired(true);
+                setIsFinishDialogOpen(false);
+                setIsPaletteSheetOpen(false);
+                void handleAutoSubmit();
+              }}
             />
           </div>
 
@@ -273,8 +316,9 @@ export function ExamRoomShell({ sessionId, initialRecoveryData }: ExamRoomShellP
             <Button
               type="button"
               size="sm"
+              disabled={isTimeExpired || isSubmitted || isAutoSubmitting}
               onClick={() => setIsFinishDialogOpen(true)}
-              className="h-9 gap-1.5 bg-emerald-600 px-3 text-xs text-white shadow-xs hover:bg-emerald-700 sm:px-4"
+              className="h-9 gap-1.5 bg-emerald-600 px-3 text-xs text-white shadow-xs hover:bg-emerald-700 disabled:opacity-50 sm:px-4"
             >
               <Send className="size-3.5" />
               <span className="hidden md:inline">Selesaikan Ujian</span>
@@ -295,6 +339,7 @@ export function ExamRoomShell({ sessionId, initialRecoveryData }: ExamRoomShellP
                 questionNumber={currentIndex + 1}
                 totalQuestions={totalQuestions}
                 isFlagged={Boolean(flaggedMap[currentQuestion.id])}
+                disabled={isTimeExpired || isSubmitted || isAutoSubmitting}
               />
             ) : (
               <div className="py-12 text-center text-sm text-slate-500">
@@ -325,15 +370,20 @@ export function ExamRoomShell({ sessionId, initialRecoveryData }: ExamRoomShellP
           currentIndex={currentIndex}
           totalQuestions={totalQuestions}
           isFlagged={Boolean(currentQuestion && flaggedMap[currentQuestion.id])}
+          isLocked={isTimeExpired || isSubmitted || isAutoSubmitting}
           onPrev={prevQuestion}
           onNext={nextQuestion}
           onToggleFlag={() => {
-            if (currentQuestion) {
+            if (currentQuestion && !isTimeExpired && !isSubmitted && !isAutoSubmitting) {
               toggleFlag(currentQuestion.id);
             }
           }}
           onOpenPalette={() => setIsPaletteSheetOpen(true)}
-          onRequestFinish={() => setIsFinishDialogOpen(true)}
+          onRequestFinish={() => {
+            if (!isTimeExpired && !isSubmitted && !isAutoSubmitting) {
+              setIsFinishDialogOpen(true);
+            }
+          }}
         />
       )}
 
@@ -353,16 +403,24 @@ export function ExamRoomShell({ sessionId, initialRecoveryData }: ExamRoomShellP
 
       {/* Dialog Konfirmasi Penyerahan Ujian */}
       <FinishExamDialog
-        open={isFinishDialogOpen}
+        open={isFinishDialogOpen && !isTimeExpired}
         onOpenChange={setIsFinishDialogOpen}
         totalQuestions={totalQuestions}
         answeredCount={answeredCount}
         unansweredCount={unansweredCount}
         flaggedCount={flaggedCount}
-        onConfirmSubmit={() => {
-          void flushSync();
-          setSubmitted(true);
+        onConfirmSubmit={async () => {
+          setIsFinishDialogOpen(false);
+          await handleAutoSubmit();
         }}
+      />
+
+      {/* Dialog Penguncian Otomatis Saat Waktu Habis (F4-03) */}
+      <TimeExpiredDialog
+        open={isTimeExpired && !isSubmitted}
+        isSubmitting={isAutoSubmitting}
+        errorMessage={autoSubmitError}
+        onRetry={handleAutoSubmit}
       />
     </div>
   );
