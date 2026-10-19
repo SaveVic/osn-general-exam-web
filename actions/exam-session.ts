@@ -637,6 +637,41 @@ export async function submitExamSessionAction(
     const now = new Date();
     const nowIso = now.toISOString();
 
+    // Verifikasi aturan toleransi keterlambatan (Grace Period 60 detik)
+    // Sesuai spesifikasi F4-04: Delta t = t_submitted - t_started <= duration + 60 detik
+    const startedMs = new Date(sessionRow.started_at).getTime();
+    const durationMinutes = sessionRow.exams?.duration_minutes ?? 90;
+    const durationMs = durationMinutes * 60 * 1000;
+    const gracePeriodMs = 60 * 1000;
+
+    let isOverdue = now.getTime() - startedMs > durationMs + gracePeriodMs;
+
+    if (sessionRow.exams?.ends_at) {
+      const scheduleEndMs = new Date(sessionRow.exams.ends_at).getTime();
+      if (!isNaN(scheduleEndMs) && now.getTime() > scheduleEndMs + gracePeriodMs) {
+        isOverdue = true;
+      }
+    }
+
+    if (isOverdue) {
+      // Kunci sesi ujian secara permanen agar tidak dapat diserahkan/diubah lagi
+      await supabase
+        .from("exam_sessions")
+        .update({
+          is_completed: true,
+          submitted_at: nowIso,
+        })
+        .eq("id", sessionId);
+
+      cookieStore.set("exam_token", "", { maxAge: 0, path: "/" });
+
+      return {
+        success: false,
+        error: "SUBMISSION_OVERDUE",
+        message: "Batas toleransi waktu pengumpulan ujian telah berakhir (lewat dari 60 detik).",
+      };
+    }
+
     // Simpan finalAnswers jika ada
     if (finalAnswers && finalAnswers.length > 0) {
       const upsertRows = finalAnswers.map((item) => ({

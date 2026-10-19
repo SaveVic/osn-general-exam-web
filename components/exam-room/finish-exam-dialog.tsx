@@ -10,7 +10,15 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
-import { AlertTriangle, CheckCircle2, Flag, HelpCircle, Send } from "lucide-react";
+import {
+  AlertCircle,
+  AlertTriangle,
+  CheckCircle2,
+  Flag,
+  HelpCircle,
+  Loader2,
+  Send,
+} from "lucide-react";
 
 interface FinishExamDialogProps {
   open: boolean;
@@ -19,6 +27,8 @@ interface FinishExamDialogProps {
   answeredCount: number;
   unansweredCount: number;
   flaggedCount: number;
+  isSubmitting?: boolean;
+  errorMessage?: string | null;
   onConfirmSubmit: () => void;
 }
 
@@ -29,18 +39,28 @@ export function FinishExamDialog({
   answeredCount,
   unansweredCount,
   flaggedCount,
+  isSubmitting = false,
+  errorMessage = null,
   onConfirmSubmit,
 }: FinishExamDialogProps) {
   const hasIncomplete = unansweredCount > 0 || flaggedCount > 0;
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
+    <Dialog
+      open={open}
+      onOpenChange={(nextOpen) => {
+        // Cegah penutupan dialog jika sedang dalam proses submit
+        if (!isSubmitting) {
+          onOpenChange(nextOpen);
+        }
+      }}
+    >
       <DialogContent className="max-w-md p-6">
         <DialogHeader className="space-y-2">
           <div className="flex items-center gap-2 text-slate-900 dark:text-slate-100">
             <Send className="size-5 text-indigo-600 dark:text-indigo-400" />
             <DialogTitle className="text-lg font-bold">
-              Konfirmasi Selesai Ujian
+              Konfirmasi Pengumpulan Ujian
             </DialogTitle>
           </div>
           <DialogDescription className="text-xs text-slate-500 dark:text-slate-400">
@@ -90,6 +110,24 @@ export function FinishExamDialog({
           </div>
         </div>
 
+        {/* Kalimat Rekapitulasi Resmi Spesifikasi F4-04 */}
+        <p className="rounded-lg bg-slate-100 p-2.5 text-center text-xs text-slate-600 dark:bg-slate-800/80 dark:text-slate-300">
+          Anda telah menjawab <strong>{answeredCount}</strong> dari <strong>{totalQuestions}</strong> soal. Terdapat <strong>{unansweredCount}</strong> soal yang belum dijawab dan <strong>{flaggedCount}</strong> soal bertanda ragu-ragu.
+        </p>
+
+        {/* Kotak Galat jika Submit Mengalami Masalah */}
+        {errorMessage && (
+          <div
+            role="alert"
+            className="flex items-start gap-2.5 rounded-lg border border-rose-200 bg-rose-50 p-3 text-xs text-rose-800 dark:border-rose-900/60 dark:bg-rose-950/40 dark:text-rose-200"
+          >
+            <AlertCircle className="mt-0.5 size-4 shrink-0 text-rose-600 dark:text-rose-400" />
+            <div className="leading-relaxed">
+              <strong>Gagal Mengumpulkan:</strong> {errorMessage}
+            </div>
+          </div>
+        )}
+
         {/* Peringatan Jika Masih Ada Soal Kosong atau Ragu */}
         {hasIncomplete ? (
           <div className="flex items-start gap-2.5 rounded-lg border border-amber-200 bg-amber-50 p-3 text-xs text-amber-900 dark:border-amber-900/50 dark:bg-amber-950/40 dark:text-amber-200">
@@ -111,25 +149,32 @@ export function FinishExamDialog({
           <Button
             type="button"
             variant="outline"
+            disabled={isSubmitting}
             onClick={() => onOpenChange(false)}
             className="text-xs"
           >
-            Kembali Mengerjakan
+            Periksa Kembali
           </Button>
           <Button
             type="button"
-            onClick={() => {
-              onOpenChange(false);
-              onConfirmSubmit();
-            }}
-            className="gap-1.5 bg-emerald-600 text-xs text-white hover:bg-emerald-700"
+            disabled={isSubmitting}
+            onClick={onConfirmSubmit}
+            className="gap-1.5 bg-emerald-600 text-xs text-white hover:bg-emerald-700 disabled:opacity-50"
           >
-            <Send className="size-3.5" />
-            <span>Kumpulkan Lembar Jawaban</span>
+            {isSubmitting ? (
+              <>
+                <Loader2 className="size-3.5 animate-spin" />
+                <span>Mengumpulkan...</span>
+              </>
+            ) : (
+              <>
+                <Send className="size-3.5" />
+                <span>Ya, Kumpulkan Sekarang</span>
+              </>
+            )}
           </Button>
         </DialogFooter>
       </DialogContent>
     </Dialog>
   );
 }
-

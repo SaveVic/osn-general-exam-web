@@ -22,6 +22,7 @@ import { QuestionPaletteSheet } from "./palette/question-palette-sheet";
 import { isQuestionAnswered } from "./palette/question-palette-grid";
 import { AlertCircle, CheckCircle2, GraduationCap, LayoutGrid, Send, User } from "lucide-react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 
 interface ExamRoomShellProps {
   sessionId: string;
@@ -29,11 +30,14 @@ interface ExamRoomShellProps {
 }
 
 export function ExamRoomShell({ sessionId, initialRecoveryData }: ExamRoomShellProps) {
+  const router = useRouter();
   const [isHydrated, setIsHydrated] = useState(false);
   const [isRecovering, setIsRecovering] = useState(false);
   const [isTimeExpired, setIsTimeExpired] = useState(false);
   const [isAutoSubmitting, setIsAutoSubmitting] = useState(false);
   const [autoSubmitError, setAutoSubmitError] = useState<string | null>(null);
+  const [isManualSubmitting, setIsManualSubmitting] = useState(false);
+  const [manualSubmitError, setManualSubmitError] = useState<string | null>(null);
   const [isFinishDialogOpen, setIsFinishDialogOpen] = useState(false);
   const [isPaletteSheetOpen, setIsPaletteSheetOpen] = useState(false);
 
@@ -137,6 +141,12 @@ export function ExamRoomShell({ sessionId, initialRecoveryData }: ExamRoomShellP
 
       if (res.success) {
         setSubmitted(true);
+        if (typeof window !== "undefined") {
+          try {
+            localStorage.removeItem("osn_exam_session_storage");
+          } catch {}
+        }
+        router.replace("/ujian/selesai");
       } else {
         setAutoSubmitError(res.message || "Gagal mengumpulkan lembar jawaban secara otomatis.");
       }
@@ -145,7 +155,47 @@ export function ExamRoomShell({ sessionId, initialRecoveryData }: ExamRoomShellP
     } finally {
       setIsAutoSubmitting(false);
     }
-  }, [sessionId, setSubmitted]);
+  }, [sessionId, setSubmitted, router]);
+
+  // Handler penyerahan manual dari dialog konfirmasi (F4-04: EXM-SUBM-01)
+  const handleManualSubmit = useCallback(async () => {
+    setIsManualSubmitting(true);
+    setManualSubmitError(null);
+
+    const currentAnswers = useExamSessionStore.getState().answersMap;
+    const currentFlagged = useExamSessionStore.getState().flaggedMap;
+    const currentQuestions = useExamSessionStore.getState().questions;
+
+    const finalAnswers = currentQuestions.map((q) => ({
+      questionId: q.id,
+      answerValue: currentAnswers[q.id] ?? null,
+      isFlagged: Boolean(currentFlagged[q.id]),
+    }));
+
+    try {
+      const res = await submitExamSessionAction({
+        sessionId,
+        finalAnswers,
+      });
+
+      if (res.success) {
+        setSubmitted(true);
+        if (typeof window !== "undefined") {
+          try {
+            localStorage.removeItem("osn_exam_session_storage");
+          } catch {}
+        }
+        setIsFinishDialogOpen(false);
+        router.replace("/ujian/selesai");
+      } else {
+        setManualSubmitError(res.message || "Gagal mengumpulkan lembar jawaban.");
+      }
+    } catch {
+      setManualSubmitError("Terjadi gangguan koneksi saat mengumpulkan lembar jawaban.");
+    } finally {
+      setIsManualSubmitting(false);
+    }
+  }, [sessionId, setSubmitted, router]);
 
   // Handler navigasi keyboard (ArrowLeft / ArrowRight)
   const handleKeyDown = useCallback(
@@ -401,7 +451,7 @@ export function ExamRoomShell({ sessionId, initialRecoveryData }: ExamRoomShellP
         onSelectIndex={setCurrentIndex}
       />
 
-      {/* Dialog Konfirmasi Penyerahan Ujian */}
+      {/* Dialog Konfirmasi Penyerahan Ujian (F4-04: EXM-SUBM-01) */}
       <FinishExamDialog
         open={isFinishDialogOpen && !isTimeExpired}
         onOpenChange={setIsFinishDialogOpen}
@@ -409,10 +459,9 @@ export function ExamRoomShell({ sessionId, initialRecoveryData }: ExamRoomShellP
         answeredCount={answeredCount}
         unansweredCount={unansweredCount}
         flaggedCount={flaggedCount}
-        onConfirmSubmit={async () => {
-          setIsFinishDialogOpen(false);
-          await handleAutoSubmit();
-        }}
+        isSubmitting={isManualSubmitting}
+        errorMessage={manualSubmitError}
+        onConfirmSubmit={handleManualSubmit}
       />
 
       {/* Dialog Penguncian Otomatis Saat Waktu Habis (F4-03) */}

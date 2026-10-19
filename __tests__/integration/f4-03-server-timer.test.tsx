@@ -318,9 +318,11 @@ describe("F4-03: Server-Authoritative Timer & Auto-Lock (EXM-TIME-01)", () => {
       const now = new Date("2026-10-20T10:00:00.000Z").getTime();
       vi.setSystemTime(now);
 
+      const startedAt = new Date(now - 30 * 60 * 1000).toISOString();
       // Sesi dengan sisa 2 detik
       const recoveryDataWithEndingTimer: RecoverExamSessionData = {
         ...mockRecoveryPayload,
+        startedAt,
         serverEndTime: new Date(now + 2 * 1000).toISOString(),
         serverTime: new Date(now).toISOString(),
       };

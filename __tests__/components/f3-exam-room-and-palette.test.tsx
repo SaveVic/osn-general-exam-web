@@ -309,14 +309,14 @@ describe("F3-02 & F3-03: Bilah Navigasi Bawah & Dialog Penyelesaian Ujian", () =
     );
 
     expect(
-      screen.getByText(/Konfirmasi Selesai Ujian/i)
+      screen.getByText(/Konfirmasi Pengumpulan Ujian/i)
     ).toBeInTheDocument();
     expect(
       screen.getByText(/Masih terdapat 2 butir belum dijawab dan 1 butir bertanda ragu-ragu/i)
     ).toBeInTheDocument();
 
     const submitBtn = screen.getByRole("button", {
-      name: /Kumpulkan Lembar Jawaban/i,
+      name: /Ya, Kumpulkan Sekarang/i,
     });
     fireEvent.click(submitBtn);
     expect(onConfirm).toHaveBeenCalledTimes(1);

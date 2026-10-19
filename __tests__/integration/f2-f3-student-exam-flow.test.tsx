@@ -311,7 +311,7 @@ describe("F3-02, F3-03, F3-04: Integrasi End-to-End Ruang Ujian (ExamRoomShell)"
     fireEvent.click(finishButtons[0]);
 
     expect(
-      screen.getByText(/Konfirmasi Selesai Ujian/i)
+      screen.getByText(/Konfirmasi (Selesai|Pengumpulan) Ujian/i)
     ).toBeInTheDocument();
     expect(
       screen.getByText(
