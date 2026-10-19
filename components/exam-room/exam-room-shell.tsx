@@ -9,7 +9,10 @@ import { ExamTimer } from "./exam-timer";
 import { QuestionCard } from "./question-card";
 import { BottomNavigationBar } from "./bottom-navigation-bar";
 import { FinishExamDialog } from "./finish-exam-dialog";
-import { AlertCircle, CheckCircle2, GraduationCap, Send, User } from "lucide-react";
+import { QuestionPaletteSidebar } from "./palette/question-palette-sidebar";
+import { QuestionPaletteSheet } from "./palette/question-palette-sheet";
+import { isQuestionAnswered } from "./palette/question-palette-grid";
+import { AlertCircle, CheckCircle2, GraduationCap, LayoutGrid, Send, User } from "lucide-react";
 import Link from "next/link";
 
 interface ExamRoomShellProps {
@@ -19,6 +22,7 @@ interface ExamRoomShellProps {
 export function ExamRoomShell({ sessionId }: ExamRoomShellProps) {
   const [isHydrated, setIsHydrated] = useState(false);
   const [isFinishDialogOpen, setIsFinishDialogOpen] = useState(false);
+  const [isPaletteSheetOpen, setIsPaletteSheetOpen] = useState(false);
 
   const storeSessionId = useExamSessionStore((state) => state.sessionId);
   const examTitle = useExamSessionStore((state) => state.examTitle);
@@ -33,6 +37,7 @@ export function ExamRoomShell({ sessionId }: ExamRoomShellProps) {
 
   const prevQuestion = useExamSessionStore((state) => state.prevQuestion);
   const nextQuestion = useExamSessionStore((state) => state.nextQuestion);
+  const setCurrentIndex = useExamSessionStore((state) => state.setCurrentIndex);
   const toggleFlag = useExamSessionStore((state) => state.toggleFlag);
   const setSubmitted = useExamSessionStore((state) => state.setSubmitted);
 
@@ -44,21 +49,7 @@ export function ExamRoomShell({ sessionId }: ExamRoomShellProps) {
   const totalQuestions = questions.length;
 
   const answeredCount = useMemo(() => {
-    return questions.filter((q) => {
-      const ans = answersMap[q.id];
-      if (!ans) return false;
-      if (typeof ans === "object") {
-        if ("selected" in ans) {
-          const sel = (ans as { selected?: unknown }).selected;
-          return Array.isArray(sel) ? sel.length > 0 : Boolean(sel);
-        }
-        if ("text" in ans) {
-          const txt = (ans as { text?: unknown }).text;
-          return typeof txt === "string" && txt.trim().length > 0;
-        }
-      }
-      return Boolean(ans);
-    }).length;
+    return questions.filter((q) => isQuestionAnswered(answersMap[q.id])).length;
   }, [questions, answersMap]);
 
   const unansweredCount = Math.max(0, totalQuestions - answeredCount);
@@ -172,8 +163,8 @@ export function ExamRoomShell({ sessionId }: ExamRoomShellProps) {
   return (
     <div className="flex min-h-screen flex-col bg-slate-50/70 dark:bg-slate-950">
       {/* Bilah Atas Sticky (Header Ruang Ujian) */}
-      <header className="sticky top-0 z-30 border-b border-slate-200 bg-white/95 px-4 py-2.5 shadow-2xs backdrop-blur-md sm:py-3 dark:border-slate-800 dark:bg-slate-900/95">
-        <div className="mx-auto flex max-w-5xl items-center justify-between gap-3 sm:gap-6">
+      <header className="sticky top-0 z-30 border-b border-slate-200 bg-white/95 px-3 py-2.5 shadow-2xs backdrop-blur-md sm:px-6 sm:py-3 dark:border-slate-800 dark:bg-slate-900/95">
+        <div className="mx-auto flex max-w-7xl items-center justify-between gap-3 sm:gap-6">
           {/* Sisi Kiri: Judul Ujian & Identitas Siswa */}
           <div className="min-w-0">
             <div className="flex items-center gap-2">
@@ -205,8 +196,22 @@ export function ExamRoomShell({ sessionId }: ExamRoomShellProps) {
             />
           </div>
 
-          {/* Sisi Kanan: Aksi Selesaikan Ujian */}
+          {/* Sisi Kanan: Aksi Daftar Soal (Mobile) & Selesaikan Ujian */}
           <div className="flex shrink-0 items-center gap-2">
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              onClick={() => setIsPaletteSheetOpen(true)}
+              className="h-9 gap-1.5 border-slate-300 px-2.5 text-xs text-slate-700 hover:bg-slate-100 lg:hidden dark:border-slate-700 dark:text-slate-200 dark:hover:bg-slate-800"
+            >
+              <LayoutGrid className="size-3.5 text-indigo-600 dark:text-indigo-400" />
+              <span className="hidden sm:inline">Daftar Soal</span>
+              <Badge variant="secondary" className="px-1.5 py-0 font-mono text-[10px]">
+                {answeredCount}/{totalQuestions}
+              </Badge>
+            </Button>
+
             <Button
               type="button"
               size="sm"
@@ -221,20 +226,39 @@ export function ExamRoomShell({ sessionId }: ExamRoomShellProps) {
         </div>
       </header>
 
-      {/* Konten Lembar Soal Aktif */}
-      <main className="mx-auto w-full max-w-5xl flex-1 space-y-6 p-3.5 sm:p-6 md:p-8">
-        {currentQuestion ? (
-          <QuestionCard
-            question={currentQuestion}
-            questionNumber={currentIndex + 1}
-            totalQuestions={totalQuestions}
-            isFlagged={Boolean(flaggedMap[currentQuestion.id])}
-          />
-        ) : (
-          <div className="py-12 text-center text-sm text-slate-500">
-            Tidak ada butir soal yang dapat ditampilkan pada nomor ini.
+      {/* Konten Ruang Ujian (2 Kolom di Desktop, 1 Kolom di Mobile) */}
+      <main className="mx-auto w-full max-w-7xl flex-1 p-3.5 sm:p-6 md:p-8">
+        <div className="items-start lg:grid lg:grid-cols-12 lg:gap-8">
+          {/* Kolom Kiri/Tengah: Lembar Soal Aktif */}
+          <div className="space-y-6 lg:col-span-8 xl:col-span-9">
+            {currentQuestion ? (
+              <QuestionCard
+                question={currentQuestion}
+                questionNumber={currentIndex + 1}
+                totalQuestions={totalQuestions}
+                isFlagged={Boolean(flaggedMap[currentQuestion.id])}
+              />
+            ) : (
+              <div className="py-12 text-center text-sm text-slate-500">
+                Tidak ada butir soal yang dapat ditampilkan pada nomor ini.
+              </div>
+            )}
           </div>
-        )}
+
+          {/* Kolom Kanan: Palet Kisi Nomor Soal (Desktop Sticky Sidebar) */}
+          <div className="hidden lg:col-span-4 lg:block xl:col-span-3">
+            <QuestionPaletteSidebar
+              questions={questions}
+              currentIndex={currentIndex}
+              answersMap={answersMap}
+              flaggedMap={flaggedMap}
+              answeredCount={answeredCount}
+              unansweredCount={unansweredCount}
+              flaggedCount={flaggedCount}
+              onSelectIndex={setCurrentIndex}
+            />
+          </div>
+        </div>
       </main>
 
       {/* Bilah Navigasi Bawah Sticky */}
@@ -250,9 +274,24 @@ export function ExamRoomShell({ sessionId }: ExamRoomShellProps) {
               toggleFlag(currentQuestion.id);
             }
           }}
+          onOpenPalette={() => setIsPaletteSheetOpen(true)}
           onRequestFinish={() => setIsFinishDialogOpen(true)}
         />
       )}
+
+      {/* Sheet / Drawer Kisi Nomor Soal untuk Layar Seluler & Tablet */}
+      <QuestionPaletteSheet
+        open={isPaletteSheetOpen}
+        onOpenChange={setIsPaletteSheetOpen}
+        questions={questions}
+        currentIndex={currentIndex}
+        answersMap={answersMap}
+        flaggedMap={flaggedMap}
+        answeredCount={answeredCount}
+        unansweredCount={unansweredCount}
+        flaggedCount={flaggedCount}
+        onSelectIndex={setCurrentIndex}
+      />
 
       {/* Dialog Konfirmasi Penyerahan Ujian */}
       <FinishExamDialog
