@@ -36,7 +36,7 @@ describe("F2-01: Komponen Gerbang Kode Rujukan (ReferralGateCard)", () => {
     useExamGateStore.getState().resetGate();
   });
 
-  it("mengubah ketikan kode menjadi huruf kapital otomatis dan memanggil verifyReferralCodeAction", async () => {
+  it("mengubah ketikan kode menjadi huruf kapital otomatis, menampilkan judul 'Portal Ujian' tanpa tombol Tempel, menempatkan pesan galat di atas input, dan memanggil verifyReferralCodeAction melalui tombol 'Masuk'", async () => {
     vi.mocked(verifyReferralCodeAction).mockResolvedValueOnce({
       success: false,
       message: "Kode rujukan tidak ditemukan. Silakan periksa kembali kode Anda.",
@@ -44,10 +44,19 @@ describe("F2-01: Komponen Gerbang Kode Rujukan (ReferralGateCard)", () => {
 
     render(<ReferralGateCard />);
 
+    // Judul hanya "Portal Ujian" tanpa caption/deskripsi dan tanpa tombol Tempel
+    expect(
+      screen.getByRole("heading", { level: 1, name: "Portal Ujian" })
+    ).toBeInTheDocument();
+    expect(
+      screen.queryByRole("button", { name: /Tempel/i })
+    ).not.toBeInTheDocument();
+
     const input = screen.getByLabelText(/Kode Rujukan Ujian/i);
-    const submitBtn = screen.getByRole("button", { name: /Periksa Kode/i });
+    const submitBtn = screen.getByRole("button", { name: /^Masuk$/i });
 
     expect(submitBtn).toBeDisabled();
+    expect(submitBtn).toHaveClass("cursor-pointer", "disabled:cursor-not-allowed");
 
     fireEvent.change(input, { target: { value: "osn26-x89" } });
     expect(input).toHaveValue("OSN26-X89");
@@ -57,11 +66,15 @@ describe("F2-01: Komponen Gerbang Kode Rujukan (ReferralGateCard)", () => {
 
     await waitFor(() => {
       expect(verifyReferralCodeAction).toHaveBeenCalledWith("OSN26-X89");
-      expect(
-        screen.getByRole("alert")
-      ).toHaveTextContent(
+      const alertBox = screen.getByRole("alert");
+      expect(alertBox).toHaveTextContent(
         "Kode rujukan tidak ditemukan. Silakan periksa kembali kode Anda."
       );
+      // Pastikan posisi pesan galat berada di atas (mendahului) kolom input
+      expect(
+        alertBox.compareDocumentPosition(input) &
+          Node.DOCUMENT_POSITION_FOLLOWING
+      ).toBeTruthy();
     });
   });
 
@@ -94,6 +107,34 @@ describe("F2-01: Komponen Gerbang Kode Rujukan (ReferralGateCard)", () => {
         "MAT2026-AUTO"
       );
     });
+  });
+
+  it("me-reset state kode dan pesan galat saat berpindah dari '/' ke '/admin/masuk' atau ketika komponen di-unmount", () => {
+    const { unmount } = render(<ReferralGateCard />);
+
+    const input = screen.getByLabelText(/Kode Rujukan Ujian/i);
+    fireEvent.change(input, { target: { value: "SALAH-123" } });
+    useExamGateStore.getState().setError("Kode rujukan tidak valid.");
+
+    expect(useExamGateStore.getState().code).toBe("SALAH-123");
+    expect(useExamGateStore.getState().error).toBe("Kode rujukan tidak valid.");
+
+    // Klik tautan menuju /admin/masuk
+    const adminLink = screen.getByRole("link", {
+      name: /Masuk Administrator/i,
+    });
+    fireEvent.click(adminLink);
+
+    expect(useExamGateStore.getState().code).toBe("");
+    expect(useExamGateStore.getState().error).toBeNull();
+
+    // Isi kembali lalu simulasi unmount saat berpindah rute
+    fireEvent.change(input, { target: { value: "COBA-LAGI" } });
+    expect(useExamGateStore.getState().code).toBe("COBA-LAGI");
+
+    unmount();
+    expect(useExamGateStore.getState().code).toBe("");
+    expect(useExamGateStore.getState().error).toBeNull();
   });
 });
 
@@ -171,8 +212,8 @@ describe("F2-02: Komponen Lobi Pra-Ujian & Mesin Tombol 3-Tahap (ExamLobbyCard)"
     // Awalnya nonaktif karena nama & kelas belum diisi
     expect(startBtn).toBeDisabled();
 
-    const nameInput = screen.getByLabelText(/Nama Lengkap Siswa/i);
-    const classSelect = screen.getByLabelText(/Pilih Kelas Peserta/i);
+    const nameInput = screen.getByLabelText(/Nama Lengkap/i);
+    const classSelect = screen.getByLabelText(/Kelas/i);
 
     fireEvent.change(nameInput, { target: { value: "Budi Hartono" } });
     expect(startBtn).toBeDisabled(); // Kelas belum dipilih

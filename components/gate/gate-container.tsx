@@ -1,6 +1,6 @@
 "use client";
 
-import { Suspense } from "react";
+import { Suspense, useEffect } from "react";
 import { useExamGateStore } from "@/lib/stores/exam-gate-store";
 import { ReferralGateCard } from "@/components/gate/referral-gate-card";
 import { ExamLobbyCard } from "@/components/gate/exam-lobby-card";
@@ -22,6 +22,14 @@ function GateCardSkeleton() {
 
 export function GateContainer() {
   const verifiedData = useExamGateStore((state) => state.verifiedData);
+  const resetGate = useExamGateStore((state) => state.resetGate);
+
+  // Reset state gerbang ujian saat keluar dari halaman "/"
+  useEffect(() => {
+    return () => {
+      resetGate();
+    };
+  }, [resetGate]);
 
   return (
     <div className="flex w-full items-center justify-center p-4 sm:p-6 md:p-8">
@@ -35,4 +43,3 @@ export function GateContainer() {
     </div>
   );
 }
-

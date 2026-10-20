@@ -10,7 +10,6 @@ import { startExamSessionAction } from "@/actions/exam-session";
 import { MarkdownRenderer } from "@/components/ui/markdown-renderer";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import type { VerifiedGateData } from "@/actions/gate";
 import {
@@ -18,7 +17,6 @@ import {
   ArrowRight,
   BookOpen,
   Calendar,
-  CheckCircle2,
   Clock,
   GraduationCap,
   Hourglass,
@@ -122,27 +120,17 @@ export function ExamLobbyCard({ verifiedData }: ExamLobbyCardProps) {
   return (
     <div className="animate-in fade-in zoom-in-95 w-full max-w-2xl duration-200">
       {/* Header Lobi */}
-      <div className="mb-6 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-        <div>
-          <div className="inline-flex items-center gap-2 rounded-full border border-emerald-200 bg-emerald-50 px-3 py-1 text-xs font-semibold text-emerald-700 shadow-xs dark:border-emerald-900/60 dark:bg-emerald-950/40 dark:text-emerald-300">
-            <CheckCircle2 className="size-3.5 text-emerald-600 dark:text-emerald-400" />
-            <span>Kode Rujukan:</span>
-            <span className="font-mono font-bold tracking-wider uppercase">{referralCode}</span>
-          </div>
-          <h1 className="mt-2 text-2xl font-bold tracking-tight text-slate-900 dark:text-slate-50">
-            Lobi Pra-Ujian
-          </h1>
-          <p className="text-xs text-slate-500 dark:text-slate-400">
-            Periksa rincian ujian dan lengkapi identitas Anda sebelum memulai.
-          </p>
-        </div>
+      <div className="mb-6 flex items-center justify-between">
+        <h1 className="text-2xl font-bold tracking-tight text-slate-900 dark:text-slate-50">
+          Lobi Pra-Ujian
+        </h1>
 
         <Button
           type="button"
           variant="outline"
           size="sm"
           onClick={resetGate}
-          className="self-start text-xs text-slate-600 hover:text-slate-900 sm:self-center dark:text-slate-400 dark:hover:text-slate-100"
+          className="text-xs text-slate-600 hover:text-slate-900 dark:text-slate-400 dark:hover:text-slate-100"
         >
           <RotateCcw className="mr-1.5 size-3.5" />
           <span>Ganti Kode</span>
@@ -212,15 +200,7 @@ export function ExamLobbyCard({ verifiedData }: ExamLobbyCardProps) {
 
         {/* Kartu Informasi & Petunjuk Naskah Ujian */}
         <Card className="border-slate-200 shadow-sm dark:border-slate-800 dark:bg-slate-900">
-          <CardHeader className="space-y-2">
-            <div className="flex items-center gap-2">
-              <Badge variant="outline" className="border-indigo-200 text-indigo-700 dark:border-indigo-800 dark:text-indigo-300">
-                Naskah Ujian Resmi
-              </Badge>
-              <Badge variant="secondary" className="font-mono text-xs">
-                {exam.duration_minutes} Menit
-              </Badge>
-            </div>
+          <CardHeader className="space-y-1.5">
             <CardTitle className="text-xl leading-snug font-bold text-slate-900 dark:text-slate-50">
               {exam.title}
             </CardTitle>
@@ -230,8 +210,20 @@ export function ExamLobbyCard({ verifiedData }: ExamLobbyCardProps) {
           </CardHeader>
 
           <CardContent className="space-y-4 pt-0">
-            {/* Grid Jadwal & Durasi */}
-            <div className="grid grid-cols-1 gap-3 text-xs sm:grid-cols-2">
+            {/* Grid Jadwal & Durasi (3 Kotak) */}
+            <div className="grid grid-cols-1 gap-3 text-xs sm:grid-cols-3">
+              <div className="flex items-start gap-2.5 rounded-lg border border-slate-100 bg-slate-50/70 p-3 dark:border-slate-800/60 dark:bg-slate-800/40">
+                <Clock className="mt-0.5 size-4 shrink-0 text-indigo-600 dark:text-indigo-400" />
+                <div>
+                  <span className="block font-medium text-slate-500 dark:text-slate-400">
+                    Durasi
+                  </span>
+                  <span className="font-mono font-semibold text-slate-800 tabular-nums dark:text-slate-200">
+                    {exam.duration_minutes} Menit
+                  </span>
+                </div>
+              </div>
+
               <div className="flex items-start gap-2.5 rounded-lg border border-slate-100 bg-slate-50/70 p-3 dark:border-slate-800/60 dark:bg-slate-800/40">
                 <Calendar className="mt-0.5 size-4 shrink-0 text-indigo-600 dark:text-indigo-400" />
                 <div>
@@ -294,7 +286,7 @@ export function ExamLobbyCard({ verifiedData }: ExamLobbyCardProps) {
                     className="flex items-center gap-1 text-xs font-semibold tracking-wider text-slate-700 uppercase dark:text-slate-300"
                   >
                     <User className="size-3 text-slate-400" />
-                    <span>Nama Lengkap Siswa</span>
+                    <span>Nama Lengkap</span>
                     <span className="text-rose-500">*</span>
                   </label>
                   <Input
@@ -321,7 +313,7 @@ export function ExamLobbyCard({ verifiedData }: ExamLobbyCardProps) {
                     className="flex items-center gap-1 text-xs font-semibold tracking-wider text-slate-700 uppercase dark:text-slate-300"
                   >
                     <GraduationCap className="size-3 text-slate-400" />
-                    <span>Pilih Kelas Peserta</span>
+                    <span>Kelas</span>
                     <span className="text-rose-500">*</span>
                   </label>
                   <select
@@ -374,32 +366,25 @@ export function ExamLobbyCard({ verifiedData }: ExamLobbyCardProps) {
                 </span>
               </Button>
             ) : statusEngine.status === "IN_PROGRESS" ? (
-              <div className="w-full space-y-2">
-                <Button
-                  type="button"
-                  onClick={handleStartExam}
-                  disabled={!isFormValid || isStarting}
-                  className="w-full bg-indigo-600 py-6 text-base font-semibold text-white transition-all hover:bg-indigo-700 disabled:cursor-not-allowed disabled:opacity-60"
-                >
-                  {isStarting ? (
-                    <>
-                      <Loader2 className="mr-2 size-5 animate-spin" />
-                      <span>Menyiapkan Sesi Ujian...</span>
-                    </>
-                  ) : (
-                    <>
-                      <ShieldCheck className="mr-2 size-5" />
-                      <span>Mulai Kerjakan Ujian</span>
-                      <ArrowRight className="ml-2 size-5" />
-                    </>
-                  )}
-                </Button>
-                {!isFormValid && (
-                  <p className="text-center text-xs text-slate-500 dark:text-slate-400">
-                    Lengkapi nama dan kelas di atas untuk mengaktifkan tombol mulai ujian.
-                  </p>
+              <Button
+                type="button"
+                onClick={handleStartExam}
+                disabled={!isFormValid || isStarting}
+                className="w-full bg-indigo-600 py-6 text-base font-semibold text-white transition-all hover:bg-indigo-700 disabled:cursor-not-allowed disabled:opacity-60"
+              >
+                {isStarting ? (
+                  <>
+                    <Loader2 className="mr-2 size-5 animate-spin" />
+                    <span>Menyiapkan Sesi Ujian...</span>
+                  </>
+                ) : (
+                  <>
+                    <ShieldCheck className="mr-2 size-5" />
+                    <span>Mulai Kerjakan Ujian</span>
+                    <ArrowRight className="ml-2 size-5" />
+                  </>
                 )}
-              </div>
+              </Button>
             ) : (
               <Button
                 type="button"

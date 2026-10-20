@@ -5,9 +5,9 @@ import { useSearchParams } from "next/navigation";
 import { useExamGateStore } from "@/lib/stores/exam-gate-store";
 import { verifyReferralCodeAction } from "@/actions/gate";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
-import { AlertCircle, ArrowRight, Clipboard, KeyRound, Loader2, ShieldCheck } from "lucide-react";
+import { AlertCircle, ArrowRight, KeyRound, Loader2, ShieldCheck } from "lucide-react";
 import Link from "next/link";
 
 export function ReferralGateCard() {
@@ -22,6 +22,7 @@ export function ReferralGateCard() {
   const setVerifying = useExamGateStore((state) => state.setVerifying);
   const setError = useExamGateStore((state) => state.setError);
   const setVerifiedData = useExamGateStore((state) => state.setVerifiedData);
+  const resetGate = useExamGateStore((state) => state.resetGate);
 
   // Fungsi verifikasi kode
   const handleVerify = useCallback(async (targetCode: string) => {
@@ -44,6 +45,15 @@ export function ReferralGateCard() {
     }
   }, [setError, setVerifying, setVerifiedData]);
 
+  // Reset state saat keluar dari ReferralGateCard menuju halaman lain (selama belum terverifikasi ke lobi)
+  useEffect(() => {
+    return () => {
+      if (!useExamGateStore.getState().verifiedData) {
+        useExamGateStore.getState().resetGate();
+      }
+    };
+  }, []);
+
   // Deteksi otomatis parameter URL `?ref=KODE`
   useEffect(() => {
     const refParam = searchParams.get("ref");
@@ -51,32 +61,14 @@ export function ReferralGateCard() {
       hasAutoCheckedRef.current = true;
       const cleanRef = refParam.trim().toUpperCase();
       setCode(cleanRef);
-      handleVerify(cleanRef);
+      void handleVerify(cleanRef);
     }
   }, [searchParams, setCode, handleVerify]);
-
-  // Tempel kode dari clipboard jika didukung
-  const handlePasteClipboard = async () => {
-    try {
-      if (navigator.clipboard && navigator.clipboard.readText) {
-        const text = await navigator.clipboard.readText();
-        if (text) {
-          const upper = text.trim().toUpperCase();
-          setCode(upper);
-          if (inputRef.current) {
-            inputRef.current.focus();
-          }
-        }
-      }
-    } catch {
-      // Abaikan jika peramban menolak izin clipboard
-    }
-  };
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!isVerifying) {
-      handleVerify(code);
+      void handleVerify(code);
     }
   };
 
@@ -87,22 +79,25 @@ export function ReferralGateCard() {
           <ShieldCheck className="size-6" />
         </div>
         <h1 className="text-2xl font-bold tracking-tight text-slate-900 dark:text-slate-50">
-          Portal Ujian Teknis
+          Portal Ujian
         </h1>
-        <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">
-          Platform ujian presisi dengan integritas waktu dan tipografi terstandar.
-        </p>
       </div>
 
       <Card className="border-slate-200 shadow-sm dark:border-slate-800 dark:bg-slate-900">
-        <CardHeader className="space-y-1">
-          <CardTitle className="text-lg">Masuk Sesi Ujian</CardTitle>
-          <CardDescription>
-            Masukkan kode rujukan yang Anda terima dari pengawas ujian untuk membuka akses naskah.
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
+        <CardContent className="pt-6">
           <form onSubmit={handleSubmit} className="space-y-4">
+            {error && (
+              <div
+                role="alert"
+                className="flex items-start gap-2.5 rounded-lg border border-rose-200 bg-rose-50 p-3 text-xs text-rose-800 dark:border-rose-900/60 dark:bg-rose-950/40 dark:text-rose-200"
+              >
+                <AlertCircle className="mt-0.5 size-4 shrink-0" />
+                <div className="flex-1 leading-relaxed">
+                  {error}
+                </div>
+              </div>
+            )}
+
             <div className="space-y-2">
               <div className="flex items-center justify-between">
                 <label
@@ -111,15 +106,6 @@ export function ReferralGateCard() {
                 >
                   Kode Rujukan Ujian
                 </label>
-                <button
-                  type="button"
-                  onClick={handlePasteClipboard}
-                  className="inline-flex items-center gap-1 text-xs text-indigo-600 hover:text-indigo-700 dark:text-indigo-400 dark:hover:text-indigo-300"
-                  title="Tempel dari Clipboard"
-                >
-                  <Clipboard className="size-3" />
-                  <span>Tempel</span>
-                </button>
               </div>
 
               <div className="relative">
@@ -141,22 +127,10 @@ export function ReferralGateCard() {
               </div>
             </div>
 
-            {error && (
-              <div
-                role="alert"
-                className="flex items-start gap-2.5 rounded-lg border border-rose-200 bg-rose-50 p-3 text-xs text-rose-800 dark:border-rose-900/60 dark:bg-rose-950/40 dark:text-rose-200"
-              >
-                <AlertCircle className="mt-0.5 size-4 shrink-0" />
-                <div className="flex-1 leading-relaxed">
-                  {error}
-                </div>
-              </div>
-            )}
-
             <Button
               type="submit"
               disabled={isVerifying || !code.trim()}
-              className="w-full bg-indigo-600 text-white hover:bg-indigo-700 disabled:opacity-50"
+              className="w-full cursor-pointer bg-indigo-600 text-white hover:bg-indigo-700 disabled:cursor-not-allowed disabled:opacity-50"
             >
               {isVerifying ? (
                 <>
@@ -165,7 +139,7 @@ export function ReferralGateCard() {
                 </>
               ) : (
                 <>
-                  <span>Periksa Kode</span>
+                  <span>Masuk</span>
                   <ArrowRight className="ml-2 size-4" />
                 </>
               )}
@@ -179,6 +153,7 @@ export function ReferralGateCard() {
           Memerlukan akses pengelola?{" "}
           <Link
             href="/admin/masuk"
+            onClick={() => resetGate()}
             className="font-medium text-indigo-600 hover:underline dark:text-indigo-400"
           >
             Masuk Administrator
@@ -188,4 +163,3 @@ export function ReferralGateCard() {
     </div>
   );
 }
-

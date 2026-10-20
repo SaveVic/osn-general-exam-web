@@ -20,8 +20,8 @@ export async function middleware(request: NextRequest) {
     }
   }
 
-  // Jika admin sudah login dan mengakses /admin/masuk, alihkan ke /admin/dasbor
-  if (pathname === "/admin/masuk" && user) {
+  // Jika admin sudah login dan mengakses / atau /admin/masuk, alihkan ke /admin/dasbor
+  if ((pathname === "/admin/masuk" || pathname === "/") && user) {
     const dashboardUrl = request.nextUrl.clone();
     dashboardUrl.pathname = "/admin/dasbor";
     dashboardUrl.searchParams.delete("pesan");

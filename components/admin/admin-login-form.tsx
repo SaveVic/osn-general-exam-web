@@ -1,10 +1,10 @@
 "use client";
 
-import { useActionState, useState } from "react";
+import { useActionState, useEffect, useState } from "react";
 import { loginAdmin, type AuthState } from "@/actions/auth";
+import { useExamGateStore } from "@/lib/stores/exam-gate-store";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Alert, AlertDescription } from "@/components/ui/alert";
 import { AlertCircle, Eye, EyeOff, Loader2, LockKeyhole, User } from "lucide-react";
 
 interface AdminLoginFormProps {
@@ -17,22 +17,34 @@ const initialState: AuthState = {
 
 export function AdminLoginForm({ initialMessage }: AdminLoginFormProps) {
   const [state, formAction, isPending] = useActionState(loginAdmin, initialState);
+  const [username, setUsername] = useState("");
+  const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
+
+  // Pastikan state gerbang peserta ("/") dan form admin di-reset saat berpindah halaman
+  useEffect(() => {
+    useExamGateStore.getState().resetGate();
+    return () => {
+      setUsername("");
+      setPassword("");
+      setShowPassword(false);
+    };
+  }, []);
+
+  const errorMessage = state.error || initialMessage;
 
   return (
     <form action={formAction} className="space-y-4">
-      {initialMessage && !state.error && (
-        <Alert variant="default" className="border-indigo-200 bg-indigo-50/50 text-indigo-900 dark:border-indigo-900/50 dark:bg-indigo-950/20 dark:text-indigo-300">
-          <AlertCircle className="size-4 text-indigo-600 dark:text-indigo-400" />
-          <AlertDescription>{initialMessage}</AlertDescription>
-        </Alert>
-      )}
-
-      {state.error && (
-        <Alert variant="destructive">
-          <AlertCircle className="size-4" />
-          <AlertDescription>{state.error}</AlertDescription>
-        </Alert>
+      {errorMessage && (
+        <div
+          role="alert"
+          className="flex items-start gap-2.5 rounded-lg border border-rose-200 bg-rose-50 p-3 text-xs text-rose-800 dark:border-rose-900/60 dark:bg-rose-950/40 dark:text-rose-200"
+        >
+          <AlertCircle className="mt-0.5 size-4 shrink-0" />
+          <div className="flex-1 leading-relaxed">
+            {errorMessage}
+          </div>
+        </div>
       )}
 
       <div className="space-y-2">
@@ -50,6 +62,8 @@ export function AdminLoginForm({ initialMessage }: AdminLoginFormProps) {
             required
             autoComplete="username"
             placeholder="admin"
+            value={username}
+            onChange={(e) => setUsername(e.target.value)}
             disabled={isPending}
             className="pl-9"
           />
@@ -72,6 +86,8 @@ export function AdminLoginForm({ initialMessage }: AdminLoginFormProps) {
             required
             autoComplete="current-password"
             placeholder="••••••••"
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
             disabled={isPending}
             className="pr-10 pl-9"
           />
@@ -80,7 +96,7 @@ export function AdminLoginForm({ initialMessage }: AdminLoginFormProps) {
             type="button"
             onClick={() => setShowPassword((prev) => !prev)}
             disabled={isPending}
-            className="absolute top-1/2 right-3 -translate-y-1/2 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200"
+            className="absolute top-1/2 right-3 -translate-y-1/2 cursor-pointer text-slate-400 hover:text-slate-600 disabled:cursor-not-allowed dark:hover:text-slate-200"
             tabIndex={-1}
             aria-label={showPassword ? "Sembunyikan kata sandi" : "Tampilkan kata sandi"}
           >
@@ -92,18 +108,17 @@ export function AdminLoginForm({ initialMessage }: AdminLoginFormProps) {
       <Button
         type="submit"
         disabled={isPending}
-        className="w-full bg-indigo-600 text-white hover:bg-indigo-700"
+        className="w-full cursor-pointer bg-indigo-600 text-white hover:bg-indigo-700 disabled:cursor-not-allowed"
       >
         {isPending ? (
           <>
             <Loader2 className="mr-2 size-4 animate-spin" />
-            Memverifikasi Kredensial...
+            <span>Memverifikasi</span>
           </>
         ) : (
-          "Masuk ke Dasbor"
+          <span>Masuk</span>
         )}
       </Button>
     </form>
   );
 }
-

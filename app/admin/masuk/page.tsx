@@ -1,7 +1,14 @@
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import type { Metadata } from "next";
+import { redirect } from "next/navigation";
+import { getAdminUser } from "@/actions/auth";
+import { Card, CardContent } from "@/components/ui/card";
 import { AdminLoginForm } from "@/components/admin/admin-login-form";
 import { ShieldCheck } from "lucide-react";
 import Link from "next/link";
+
+export const metadata: Metadata = {
+  title: "Portal Admin",
+};
 
 interface LoginPageProps {
   searchParams: Promise<{
@@ -10,6 +17,12 @@ interface LoginPageProps {
 }
 
 export default async function AdminLoginPage({ searchParams }: LoginPageProps) {
+  const user = await getAdminUser();
+
+  if (user) {
+    redirect("/admin/dasbor");
+  }
+
   const params = await searchParams;
 
   return (
@@ -20,21 +33,12 @@ export default async function AdminLoginPage({ searchParams }: LoginPageProps) {
             <ShieldCheck className="size-6" />
           </div>
           <h1 className="text-2xl font-bold tracking-tight text-slate-900 dark:text-slate-50">
-            Portal Pengelola Ujian
+            Portal Admin
           </h1>
-          <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">
-            Kawasan terbatas untuk penyusunan dan pengawasan naskah ujian.
-          </p>
         </div>
 
         <Card className="border-slate-200 shadow-sm dark:border-slate-800 dark:bg-slate-900">
-          <CardHeader className="space-y-1">
-            <CardTitle className="text-lg">Masuk Administrator</CardTitle>
-            <CardDescription>
-              Silakan masukkan kredensial pengelola untuk mengakses dasbor.
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
+          <CardContent className="pt-6">
             <AdminLoginForm initialMessage={params.pesan} />
           </CardContent>
         </Card>
@@ -54,4 +58,3 @@ export default async function AdminLoginPage({ searchParams }: LoginPageProps) {
     </div>
   );
 }
-

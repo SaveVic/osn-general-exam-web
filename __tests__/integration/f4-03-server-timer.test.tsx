@@ -2,8 +2,8 @@ import React from "react";
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import { render, screen, act } from "@testing-library/react";
 import { useExamSessionStore } from "@/lib/stores/exam-session-store";
+import { calculateSessionDeadline } from "@/lib/exam/deadline";
 import {
-  calculateSessionDeadline,
   submitExamSessionAction,
   type RecoverExamSessionData,
   type ClientQuestionItem,
