@@ -1,3 +1,4 @@
+import type { Metadata } from "next";
 import { getAdminUser } from "@/actions/auth";
 import { getAdminExams } from "@/actions/exams";
 import { AdminHeader } from "@/components/admin/admin-header";
@@ -8,6 +9,10 @@ import { Button } from "@/components/ui/button";
 import { BookOpen, Globe, PlusCircle, Users } from "lucide-react";
 import Link from "next/link";
 import { redirect } from "next/navigation";
+
+export const metadata: Metadata = {
+  title: "Dashboard",
+};
 
 export default async function AdminDashboardPage() {
   const user = await getAdminUser();
@@ -31,7 +36,7 @@ export default async function AdminDashboardPage() {
         <div className="mb-8 flex flex-col justify-between gap-4 sm:flex-row sm:items-center">
           <div>
             <h1 className="text-2xl font-bold tracking-tight text-slate-900 dark:text-slate-50">
-              Ikhtisar Dasbor
+              Dashboard
             </h1>
             <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">
               Kelola naskah ujian, susun bank soal, dan pantau aktivitas peserta ujian.

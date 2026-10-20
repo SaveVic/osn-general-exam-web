@@ -97,7 +97,7 @@ export function ExamList({ exams }: ExamListProps) {
           <button
             type="button"
             onClick={() => setFilter("all")}
-            className={`rounded-md px-3 py-1.5 transition-colors ${
+            className={`cursor-pointer rounded-md px-3 py-1.5 transition-colors ${
               filter === "all"
                 ? "bg-slate-900 font-semibold text-white dark:bg-slate-100 dark:text-slate-900"
                 : "text-slate-600 hover:text-slate-900 dark:text-slate-400 dark:hover:text-slate-200"
@@ -108,7 +108,7 @@ export function ExamList({ exams }: ExamListProps) {
           <button
             type="button"
             onClick={() => setFilter("published")}
-            className={`rounded-md px-3 py-1.5 transition-colors ${
+            className={`cursor-pointer rounded-md px-3 py-1.5 transition-colors ${
               filter === "published"
                 ? "bg-slate-900 font-semibold text-white dark:bg-slate-100 dark:text-slate-900"
                 : "text-slate-600 hover:text-slate-900 dark:text-slate-400 dark:hover:text-slate-200"
@@ -119,7 +119,7 @@ export function ExamList({ exams }: ExamListProps) {
           <button
             type="button"
             onClick={() => setFilter("draft")}
-            className={`rounded-md px-3 py-1.5 transition-colors ${
+            className={`cursor-pointer rounded-md px-3 py-1.5 transition-colors ${
               filter === "draft"
                 ? "bg-slate-900 font-semibold text-white dark:bg-slate-100 dark:text-slate-900"
                 : "text-slate-600 hover:text-slate-900 dark:text-slate-400 dark:hover:text-slate-200"

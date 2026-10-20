@@ -1,18 +1,7 @@
 import { getAdminUser } from "@/actions/auth";
 import { getExamMonitoringData } from "@/actions/session-monitoring";
-import { AdminHeader } from "@/components/admin/admin-header";
 import { SessionMonitoringView } from "@/components/admin/monitoring/session-monitoring-view";
-import { RecalculateScoresButton } from "@/components/admin/scoring/recalculate-scores-button";
-import { Button } from "@/components/ui/button";
-import {
-  Activity,
-  BarChart3,
-  BookOpen,
-  FileEdit,
-  KeyRound,
-  Settings,
-} from "lucide-react";
-import Link from "next/link";
+import { Activity } from "lucide-react";
 import { notFound, redirect } from "next/navigation";
 
 interface ExamMonitoringPageProps {
@@ -45,116 +34,29 @@ export default async function ExamMonitoringPage({
   } = result;
 
   return (
-    <div className="min-h-screen bg-slate-50 dark:bg-slate-950">
-      <AdminHeader userEmail={user.email ?? "admin@exam.local"} />
-
-      <main className="mx-auto max-w-6xl px-4 py-8 sm:px-6 lg:px-8">
-        {/* Navigasi Bar Atas / Breadcrumb */}
-        <div className="mb-6 flex flex-wrap items-center justify-between gap-4">
-          <div className="flex items-center gap-2 text-xs text-slate-500 dark:text-slate-400">
-            <Link
-              href="/admin/dasbor"
-              className="hover:text-indigo-600 dark:hover:text-indigo-400"
-            >
-              Dasbor
-            </Link>
-            <span>/</span>
-            <Link
-              href={`/admin/ujian/${exam.id}/pengaturan`}
-              className="max-w-50 truncate hover:text-indigo-600 dark:hover:text-indigo-400"
-            >
-              {exam.title}
-            </Link>
-            <span>/</span>
-            <span className="font-semibold text-slate-900 dark:text-slate-100">
-              Pemantauan Sesi
-            </span>
-          </div>
-
-          <div className="flex flex-wrap items-center gap-2">
-            <Button
-              asChild
-              variant="outline"
-              size="sm"
-              className="gap-1.5 text-xs"
-            >
-              <Link href={`/admin/ujian/${exam.id}/soal`}>
-                <BookOpen className="size-3.5 text-indigo-600 dark:text-indigo-400" />
-                Bank Soal
-              </Link>
-            </Button>
-            <Button
-              asChild
-              variant="outline"
-              size="sm"
-              className="gap-1.5 text-xs"
-            >
-              <Link href={`/admin/ujian/${exam.id}/pengaturan`}>
-                <Settings className="size-3.5 text-slate-600 dark:text-slate-400" />
-                Pengaturan
-              </Link>
-            </Button>
-            <Button
-              asChild
-              variant="outline"
-              size="sm"
-              className="gap-1.5 text-xs"
-            >
-              <Link href={`/admin/ujian/${exam.id}/kode-rujukan`}>
-                <KeyRound className="size-3.5 text-amber-600 dark:text-amber-400" />
-                Kode Rujukan
-              </Link>
-            </Button>
-            <Button
-              asChild
-              variant="outline"
-              size="sm"
-              className="gap-1.5 text-xs"
-            >
-              <Link href={`/admin/ujian/${exam.id}/penilaian`}>
-                <FileEdit className="size-3.5 text-emerald-600 dark:text-emerald-400" />
-                Penilaian Manual
-              </Link>
-            </Button>
-            <Button
-              asChild
-              variant="outline"
-              size="sm"
-              className="gap-1.5 text-xs"
-            >
-              <Link href={`/admin/ujian/${exam.id}/laporan`}>
-                <BarChart3 className="size-3.5 text-indigo-600 dark:text-indigo-400" />
-                Laporan Nilai
-              </Link>
-            </Button>
-            <RecalculateScoresButton examId={exam.id} />
-          </div>
+    <div className="space-y-6">
+      {/* Judul Halaman */}
+      <div className="flex items-center gap-3">
+        <div className="flex size-10 items-center justify-center rounded-lg bg-indigo-600/10 text-indigo-600 dark:bg-indigo-500/10 dark:text-indigo-400">
+          <Activity className="size-5" />
         </div>
-
-        {/* Judul Halaman */}
-        <div className="mb-6 flex items-center gap-3">
-          <div className="flex size-10 items-center justify-center rounded-lg bg-indigo-600/10 text-indigo-600 dark:bg-indigo-500/10 dark:text-indigo-400">
-            <Activity className="size-5" />
-          </div>
-          <div>
-            <h1 className="text-2xl font-bold tracking-tight text-slate-900 dark:text-slate-50">
-              Pemantauan Sesi Aktif
-            </h1>
-            <p className="mt-0.5 text-sm text-slate-500 dark:text-slate-400">
-              Pantau status pengerjaan peserta secara langsung, waktu sinkronisasi terakhir, dan lakukan tindakan darurat paksa kumpulkan.
-            </p>
-          </div>
+        <div>
+          <h1 className="text-2xl font-bold tracking-tight text-slate-900 dark:text-slate-50">
+            Pemantauan Sesi Aktif
+          </h1>
+          <p className="mt-0.5 text-sm text-slate-500 dark:text-slate-400">
+            Pantau status pengerjaan peserta secara langsung, waktu sinkronisasi terakhir, dan lakukan tindakan darurat paksa kumpulkan.
+          </p>
         </div>
+      </div>
 
-        {/* Komponen Utama Pemantauan Sesi */}
-        <SessionMonitoringView
-          exam={exam}
-          totalQuestions={totalQuestions}
-          initialSessions={sessions}
-          initialServerTime={serverTime}
-        />
-      </main>
+      {/* Komponen Utama Pemantauan Sesi */}
+      <SessionMonitoringView
+        exam={exam}
+        totalQuestions={totalQuestions}
+        initialSessions={sessions}
+        initialServerTime={serverTime}
+      />
     </div>
   );
 }
-

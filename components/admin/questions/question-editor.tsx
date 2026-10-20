@@ -277,12 +277,9 @@ export function QuestionEditor({
         <div>
           <h2 className="text-lg font-bold text-slate-900 dark:text-slate-50">
             {isEdit
-              ? `Sunting Butir Soal #${initialQuestion?.order_index}`
-              : "Tambah Butir Soal Baru"}
+              ? `Edit Soal #${initialQuestion?.order_index}`
+              : "Tambah Soal"}
           </h2>
-          <p className="text-xs text-slate-500 dark:text-slate-400">
-            Gunakan format Markdown untuk teks dan $\LaTeX$ untuk rumus matematika.
-          </p>
         </div>
 
         <div className="flex items-center gap-2">
@@ -333,7 +330,7 @@ export function QuestionEditor({
               type="button"
               onClick={() => setQuestionType("single_choice")}
               className={cn(
-                "flex items-center justify-center gap-1.5 rounded-lg border p-2.5 text-xs font-medium transition-colors",
+                "flex cursor-pointer items-center justify-center gap-1.5 rounded-lg border p-2.5 text-xs font-medium transition-colors",
                 questionType === "single_choice"
                   ? "border-indigo-600 bg-indigo-50/70 font-semibold text-indigo-700 dark:border-indigo-500 dark:bg-indigo-950/40 dark:text-indigo-300"
                   : "border-slate-200 text-slate-600 hover:bg-slate-50 dark:border-slate-800 dark:text-slate-400 dark:hover:bg-slate-800"
@@ -346,7 +343,7 @@ export function QuestionEditor({
               type="button"
               onClick={() => setQuestionType("multiple_choice")}
               className={cn(
-                "flex items-center justify-center gap-1.5 rounded-lg border p-2.5 text-xs font-medium transition-colors",
+                "flex cursor-pointer items-center justify-center gap-1.5 rounded-lg border p-2.5 text-xs font-medium transition-colors",
                 questionType === "multiple_choice"
                   ? "border-indigo-600 bg-indigo-50/70 font-semibold text-indigo-700 dark:border-indigo-500 dark:bg-indigo-950/40 dark:text-indigo-300"
                   : "border-slate-200 text-slate-600 hover:bg-slate-50 dark:border-slate-800 dark:text-slate-400 dark:hover:bg-slate-800"
@@ -359,7 +356,7 @@ export function QuestionEditor({
               type="button"
               onClick={() => setQuestionType("short_answer")}
               className={cn(
-                "flex items-center justify-center gap-1.5 rounded-lg border p-2.5 text-xs font-medium transition-colors",
+                "flex cursor-pointer items-center justify-center gap-1.5 rounded-lg border p-2.5 text-xs font-medium transition-colors",
                 questionType === "short_answer"
                   ? "border-indigo-600 bg-indigo-50/70 font-semibold text-indigo-700 dark:border-indigo-500 dark:bg-indigo-950/40 dark:text-indigo-300"
                   : "border-slate-200 text-slate-600 hover:bg-slate-50 dark:border-slate-800 dark:text-slate-400 dark:hover:bg-slate-800"
@@ -398,13 +395,10 @@ export function QuestionEditor({
         <div className="space-y-5">
           {/* Textarea Soal */}
           <div className="space-y-1.5">
-            <div className="flex items-center justify-between">
+            <div>
               <label className="text-xs font-semibold tracking-wider text-slate-700 uppercase dark:text-slate-300">
-                Naskah Pertanyaan (Markdown & $\LaTeX$) <span className="text-destructive">*</span>
+                Deskripsi Soal <span className="text-destructive">*</span>
               </label>
-              <span className="text-[11px] text-slate-400">
-                Gunakan $...$ untuk rumus inline dan $$...$$ untuk display
-              </span>
             </div>
 
             <div className="rounded-lg shadow-xs">
@@ -520,27 +514,21 @@ export function QuestionEditor({
             /* Input Pilihan Ganda & Jamak */
             <div className="space-y-3">
               <div className="flex items-center justify-between">
-                <div>
-                  <h3 className="text-xs font-semibold tracking-wider text-slate-700 uppercase dark:text-slate-300">
-                    Daftar Opsi Pilihan Jawaban
-                  </h3>
-                  <p className="text-[11px] text-slate-400">
-                    {questionType === "single_choice"
-                      ? "Pilih radio button pada opsi yang menjadi kunci jawaban benar."
-                      : "Centang checkbox pada opsi yang menjadi kunci jawaban benar."}
-                  </p>
-                </div>
+                <h3 className="text-xs font-semibold tracking-wider text-slate-700 uppercase dark:text-slate-300">
+                  Pilihan Jawaban
+                </h3>
 
                 <Button
                   type="button"
                   variant="outline"
-                  size="sm"
+                  size="icon"
                   onClick={handleAddOption}
                   disabled={isPending || options.length >= 10}
-                  className="h-7 border-slate-300 text-xs dark:border-slate-700"
+                  className="size-7 cursor-pointer border-slate-300 dark:border-slate-700"
+                  aria-label="Tambah Opsi"
+                  title="Tambah Opsi"
                 >
-                  <Plus className="mr-1 size-3" />
-                  Tambah Opsi
+                  <Plus className="size-3.5" />
                 </Button>
               </div>
 
@@ -575,7 +563,7 @@ export function QuestionEditor({
                           onClick={() => setSingleCorrect(opt.id)}
                           title="Tandai sebagai kunci jawaban benar"
                           className={cn(
-                            "flex size-7 shrink-0 items-center justify-center rounded-full border transition-all",
+                            "flex size-7 shrink-0 cursor-pointer items-center justify-center rounded-full border transition-all",
                             isCorrect
                               ? "border-emerald-600 bg-emerald-600 text-white dark:border-emerald-500 dark:bg-emerald-500"
                               : "border-slate-300 bg-white text-slate-500 hover:border-emerald-500 dark:border-slate-700 dark:bg-slate-800"
@@ -589,7 +577,7 @@ export function QuestionEditor({
                           onClick={() => handleToggleMultiCorrect(opt.id)}
                           title="Tandai sebagai salah satu kunci jawaban benar"
                           className={cn(
-                            "flex size-7 shrink-0 items-center justify-center rounded-md border font-mono text-xs font-bold transition-all",
+                            "flex size-7 shrink-0 cursor-pointer items-center justify-center rounded-md border font-mono text-xs font-bold transition-all",
                             isCorrect
                               ? "border-emerald-600 bg-emerald-600 text-white dark:border-emerald-500 dark:bg-emerald-500"
                               : "border-slate-300 bg-white text-slate-500 hover:border-emerald-500 dark:border-slate-700 dark:bg-slate-800"
@@ -632,12 +620,9 @@ export function QuestionEditor({
 
         {/* PANEL KANAN: Pratinjau Presisi (Live Preview) */}
         <div className="space-y-3 lg:sticky lg:top-4">
-          <div className="flex items-center justify-between">
+          <div>
             <span className="text-xs font-semibold tracking-wider text-slate-700 uppercase dark:text-slate-300">
               Pratinjau Tampilan Peserta
-            </span>
-            <span className="rounded-full bg-slate-100 px-2 py-0.5 text-[11px] font-medium text-slate-600 dark:bg-slate-800 dark:text-slate-300">
-              {points} Poin
             </span>
           </div>
 
@@ -660,7 +645,7 @@ export function QuestionEditor({
                   <div className="flex items-center gap-1.5 pt-1 text-xs text-emerald-600 dark:text-emerald-400">
                     <CheckCircle2 className="size-3.5" />
                     <span>
-                      Kunci: <strong>{shortAnswer.text}</strong>
+                      Benar: <strong>{shortAnswer.text}</strong>
                       {shortAnswer.numeric_tolerance > 0 &&
                         ` (±${shortAnswer.numeric_tolerance})`}
                     </span>
@@ -703,7 +688,7 @@ export function QuestionEditor({
                       </div>
                       {isCorrect && (
                         <span className="shrink-0 rounded bg-emerald-100 px-1.5 py-0.5 text-[10px] font-bold text-emerald-800 dark:bg-emerald-950 dark:text-emerald-300">
-                          KUNCI
+                          BENAR
                         </span>
                       )}
                     </div>

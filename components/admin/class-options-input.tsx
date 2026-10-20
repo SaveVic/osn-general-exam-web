@@ -66,12 +66,14 @@ export function ClassOptionsInput({
         <Button
           type="button"
           variant="outline"
+          size="icon"
           onClick={handleAddClass}
           disabled={disabled || !inputValue.trim()}
-          className="shrink-0 gap-1.5"
+          className="shrink-0"
+          aria-label="Tambah"
+          title="Tambah"
         >
           <Plus className="size-4" />
-          Tambah
         </Button>
       </div>
 
