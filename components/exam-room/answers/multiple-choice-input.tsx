@@ -4,7 +4,7 @@ import React from "react";
 import type { ChoiceOption } from "@/lib/validations/question";
 import { MarkdownRenderer } from "@/components/ui/markdown-renderer";
 import { Button } from "@/components/ui/button";
-import { Check, Info, RotateCcw } from "lucide-react";
+import { Check, RotateCcw } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 interface MultipleChoiceInputProps {
@@ -27,12 +27,6 @@ export function MultipleChoiceInput({
 
   return (
     <div className="space-y-3">
-      {/* Petunjuk Pilihan Jamak */}
-      <div className="flex items-center gap-2 rounded-lg border border-indigo-100 bg-indigo-50/60 px-3 py-2 text-xs text-indigo-800 dark:border-indigo-900/50 dark:bg-indigo-950/30 dark:text-indigo-200">
-        <Info className="size-4 shrink-0 text-indigo-600 dark:text-indigo-400" />
-        <span>Pilihan Jamak: Anda dapat memilih satu atau lebih jawaban yang menurut Anda benar.</span>
-      </div>
-
       <div className="space-y-2.5" role="group" aria-label="Daftar Opsi Pilihan Jamak">
         {options.map((option) => {
           const isSelected = selectedOptionIds.includes(option.id);

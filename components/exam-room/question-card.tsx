@@ -85,9 +85,27 @@ export function QuestionCard({
 
         {/* Pemisah Halus */}
         <div className="border-t border-slate-200/80 pt-6 dark:border-slate-800">
-          <div className="mb-3 text-xs font-bold tracking-wider text-slate-500 uppercase dark:text-slate-400">
-            Pilihan / Kolom Jawaban:
-          </div>
+          {question.question_type === "single_choice" && (
+            <div className="mb-3 space-y-0.5">
+              <div className="text-xs font-bold tracking-wider text-slate-700 uppercase dark:text-slate-300">
+                Jawaban
+              </div>
+              <p className="text-xs text-slate-500 dark:text-slate-400">
+                Anda dapat memilih salah satu jawaban
+              </p>
+            </div>
+          )}
+
+          {question.question_type === "multiple_choice" && (
+            <div className="mb-3 space-y-0.5">
+              <div className="text-xs font-bold tracking-wider text-slate-700 uppercase dark:text-slate-300">
+                Jawaban
+              </div>
+              <p className="text-xs text-slate-500 dark:text-slate-400">
+                Anda dapat memilih satu atau lebih jawaban
+              </p>
+            </div>
+          )}
 
           {/* Opsi Jawaban Interaktif */}
           <QuestionOptions question={question} disabled={disabled} />

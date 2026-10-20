@@ -131,7 +131,7 @@ describe("F3-02: Komponen Input Opsi Jawaban Interaktif (SingleChoice, MultipleC
     expect(onClear).toHaveBeenCalledTimes(1);
   });
 
-  it("ShortAnswerInput memperbarui teks isian dan menampilkan badge Tersimpan di perangkat", () => {
+  it("ShortAnswerInput memperbarui teks isian dan menampilkan status Belum diisi / Sudah diisi", () => {
     const onChangeText = vi.fn();
     const onClearText = vi.fn();
 
@@ -145,7 +145,7 @@ describe("F3-02: Komponen Input Opsi Jawaban Interaktif (SingleChoice, MultipleC
     );
 
     expect(
-      screen.getByText(/Belum ada jawaban yang diisi/i)
+      screen.getByText("Belum diisi")
     ).toBeInTheDocument();
 
     const input = screen.getByPlaceholderText(
@@ -154,7 +154,7 @@ describe("F3-02: Komponen Input Opsi Jawaban Interaktif (SingleChoice, MultipleC
     fireEvent.change(input, { target: { value: "1024" } });
 
     expect(onChangeText).toHaveBeenCalledWith("1024");
-    expect(screen.getByText(/Tersimpan di perangkat/i)).toBeInTheDocument();
+    expect(screen.getByText("Sudah diisi")).toBeInTheDocument();
 
     const clearBtn = screen.getByRole("button", { name: /Hapus Jawaban/i });
     fireEvent.click(clearBtn);

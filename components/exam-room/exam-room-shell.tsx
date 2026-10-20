@@ -311,9 +311,6 @@ export function ExamRoomShell({ sessionId, initialRecoveryData }: ExamRoomShellP
           {/* Sisi Kiri: Judul Ujian, Indikator Sinkronisasi, & Identitas Siswa */}
           <div className="min-w-0">
             <div className="flex items-center gap-2">
-              <Badge variant="outline" className="hidden border-indigo-200 text-xs text-indigo-700 sm:inline-flex dark:border-indigo-800 dark:text-indigo-300">
-                Sesi Aktif
-              </Badge>
               <h1 className="truncate text-sm font-bold text-slate-900 sm:text-base dark:text-slate-100">
                 {examTitle}
               </h1>
@@ -331,20 +328,6 @@ export function ExamRoomShell({ sessionId, initialRecoveryData }: ExamRoomShellP
               </span>
               <SyncStatusBadge syncStatus={syncStatus} className="md:hidden" />
             </div>
-          </div>
-
-          {/* Tengah: Penghitung Waktu Riil */}
-          <div className="shrink-0">
-            <ExamTimer
-              serverEndTime={serverEndTime}
-              serverTimeOffsetMs={serverTimeOffsetMs}
-              onExpire={() => {
-                setIsTimeExpired(true);
-                setIsFinishDialogOpen(false);
-                setIsPaletteSheetOpen(false);
-                void handleAutoSubmit();
-              }}
-            />
           </div>
 
           {/* Sisi Kanan: Aksi Daftar Soal (Mobile) & Selesaikan Ujian */}
@@ -399,17 +382,30 @@ export function ExamRoomShell({ sessionId, initialRecoveryData }: ExamRoomShellP
           </div>
 
           {/* Kolom Kanan: Palet Kisi Nomor Soal (Desktop Sticky Sidebar) */}
-          <div className="hidden lg:col-span-4 lg:block xl:col-span-3">
-            <QuestionPaletteSidebar
-              questions={questions}
-              currentIndex={currentIndex}
-              answersMap={answersMap}
-              flaggedMap={flaggedMap}
-              answeredCount={answeredCount}
-              unansweredCount={unansweredCount}
-              flaggedCount={flaggedCount}
-              onSelectIndex={setCurrentIndex}
-            />
+          <div className="hidden lg:sticky lg:top-20 lg:col-span-4 lg:block lg:self-start xl:col-span-3">
+            <div className="flex flex-col gap-3.5">
+              <ExamTimer
+                serverEndTime={serverEndTime}
+                serverTimeOffsetMs={serverTimeOffsetMs}
+                onExpire={() => {
+                  setIsTimeExpired(true);
+                  setIsFinishDialogOpen(false);
+                  setIsPaletteSheetOpen(false);
+                  void handleAutoSubmit();
+                }}
+                className="w-full justify-center rounded-xl bg-white shadow-2xs dark:bg-slate-900"
+              />
+              <QuestionPaletteSidebar
+                questions={questions}
+                currentIndex={currentIndex}
+                answersMap={answersMap}
+                flaggedMap={flaggedMap}
+                answeredCount={answeredCount}
+                unansweredCount={unansweredCount}
+                flaggedCount={flaggedCount}
+                onSelectIndex={setCurrentIndex}
+              />
+            </div>
           </div>
         </div>
       </main>

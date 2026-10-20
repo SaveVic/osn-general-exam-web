@@ -37,7 +37,7 @@ export function QuestionPaletteSidebar({
       aria-label="Palet Navigasi Soal"
       className={cn(
         "rounded-2xl border border-slate-200/90 bg-white p-5 shadow-xs dark:border-slate-800 dark:bg-slate-900",
-        "sticky top-20 flex max-h-[calc(100vh-6rem)] flex-col gap-4",
+        "flex max-h-[calc(100vh-10.5rem)] flex-col gap-4",
         className
       )}
     >
@@ -55,7 +55,7 @@ export function QuestionPaletteSidebar({
       </div>
 
       {/* Grid Tombol Nomor Soal (Scrollable jika butir soal banyak) */}
-      <div className="flex-1 overflow-y-auto py-1 pr-1">
+      <div className="flex-1 overflow-y-auto p-1">
         <QuestionPaletteGrid
           questions={questions}
           currentIndex={currentIndex}

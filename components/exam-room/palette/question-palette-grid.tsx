@@ -44,7 +44,7 @@ export function QuestionPaletteGrid({
     <div
       role="grid"
       aria-label="Palet Kisi Nomor Soal"
-      className={cn("grid grid-cols-5 gap-2 sm:gap-2.5", className)}
+      className={cn("grid grid-cols-5 gap-2 p-1.5 sm:gap-2.5", className)}
     >
       {questions.map((q, idx) => {
         const isCurrent = idx === currentIndex;
@@ -72,7 +72,7 @@ export function QuestionPaletteGrid({
             className={cn(
               "relative flex size-10 cursor-pointer items-center justify-center rounded-xl font-mono text-sm font-bold transition-all duration-150 select-none sm:size-11",
               "focus-visible:ring-2 focus-visible:ring-indigo-500 focus-visible:ring-offset-2 focus-visible:outline-none dark:focus-visible:ring-offset-slate-900",
-              isCurrent && "z-10 scale-105 font-extrabold ring-2 ring-indigo-500 ring-offset-2 dark:ring-offset-slate-950",
+              isCurrent && "z-10 font-extrabold ring-2 ring-indigo-600 ring-offset-2 dark:ring-indigo-400 dark:ring-offset-slate-900",
               isFlagged
                 ? "border border-amber-600 bg-amber-500 text-white shadow-2xs hover:bg-amber-600"
                 : isAnswered
