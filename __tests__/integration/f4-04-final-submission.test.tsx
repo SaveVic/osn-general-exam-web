@@ -301,16 +301,18 @@ describe("F4-04: Final Submission Flow & Confirmation Page (EXM-SUBM-01)", () =>
       // Judul resmi
       expect(screen.getByText("Konfirmasi Pengumpulan Ujian")).toBeInTheDocument();
 
-      // Kalimat rekapitulasi spesifikasi F4-04
+      // Ringkasan status 3 counter box
+      expect(screen.getByText("Terjawab")).toBeInTheDocument();
+      expect(screen.getByText("3")).toBeInTheDocument();
+      expect(screen.getByText("Kosong")).toBeInTheDocument();
+      expect(screen.getByText("7")).toBeInTheDocument();
+      expect(screen.getByText("Ragu-ragu")).toBeInTheDocument();
+      expect(screen.getByText("2")).toBeInTheDocument();
+
+      // Memastikan pesan redundan "Anda telah menjawab..." sudah dihapus
       expect(
-        screen.getByText(
-          (_, el) =>
-            el?.tagName.toLowerCase() === "p" &&
-            Boolean(el?.textContent?.includes("Anda telah menjawab 3 dari 10 soal")) &&
-            Boolean(el?.textContent?.includes("Terdapat 7 soal yang belum dijawab")) &&
-            Boolean(el?.textContent?.includes("2 soal bertanda ragu-ragu"))
-        )
-      ).toBeInTheDocument();
+        screen.queryByText(/Anda telah menjawab/i)
+      ).not.toBeInTheDocument();
 
       // Tombol tindakan
       const cancelBtn = screen.getByRole("button", { name: "Periksa Kembali" });
@@ -458,7 +460,9 @@ describe("F4-04: Final Submission Flow & Confirmation Page (EXM-SUBM-01)", () =>
       expect(localStorage.getItem("osn_exam_session_storage")).toBeNull();
 
       // Verifikasi dialihkan ke rute /ujian/selesai
-      expect(mockRouterReplace).toHaveBeenCalledWith("/ujian/selesai");
+      expect(mockRouterReplace).toHaveBeenCalledWith(
+        expect.stringContaining("/ujian/selesai")
+      );
     });
   });
 
@@ -466,8 +470,9 @@ describe("F4-04: Final Submission Flow & Confirmation Page (EXM-SUBM-01)", () =>
   // 4. Confirmation Page Component: /ujian/selesai
   // =========================================================================
   describe("ExamFinishedPage (/ujian/selesai)", () => {
-    it("renders friendly confirmation message and return home link", () => {
-      render(<ExamFinishedPage />);
+    it("renders friendly confirmation message and return home link", async () => {
+      const page = await ExamFinishedPage({});
+      render(page);
 
       // Pesan resmi sesuai spesifikasi F4-04
       expect(screen.getByText("Ujian Berhasil Dikirimkan")).toBeInTheDocument();

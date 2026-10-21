@@ -94,6 +94,7 @@ export async function createExamAction(
     ends_at: formData.get("ends_at")?.toString() || "",
     class_options: rawClassOptions,
     is_published: formData.get("is_published") === "on" || formData.get("is_published") === "true",
+    show_score: formData.get("show_score") === "on" || formData.get("show_score") === "true",
   };
 
   const validation = examFormSchema.safeParse(rawData);
@@ -115,6 +116,7 @@ export async function createExamAction(
     ends_at: new Date(validation.data.ends_at).toISOString(),
     class_options: validation.data.class_options,
     is_published: validation.data.is_published,
+    show_score: validation.data.show_score,
   });
 
   if (error) {
@@ -154,6 +156,7 @@ export async function updateExamAction(
     ends_at: formData.get("ends_at")?.toString() || "",
     class_options: rawClassOptions,
     is_published: formData.get("is_published") === "on" || formData.get("is_published") === "true",
+    show_score: formData.get("show_score") === "on" || formData.get("show_score") === "true",
   };
 
   const validation = examFormSchema.safeParse(rawData);
@@ -177,6 +180,8 @@ export async function updateExamAction(
       ends_at: new Date(validation.data.ends_at).toISOString(),
       class_options: validation.data.class_options,
       is_published: validation.data.is_published,
+      show_score: validation.data.show_score,
+      updated_at: new Date().toISOString(),
     })
     .eq("id", id);
 
@@ -189,11 +194,56 @@ export async function updateExamAction(
 
   revalidatePath("/admin/dasbor");
   revalidatePath(`/admin/ujian/${id}/pengaturan`);
+  revalidatePath(`/admin/ujian/${id}/soal`);
 
   return {
     success: true,
     message: "Perubahan naskah ujian berhasil disimpan.",
   };
+}
+
+/**
+ * Server Action: Mengubah pengaturan visibilitas skor naskah ujian secara instan
+ */
+export async function toggleExamShowScoreAction(
+  id: string,
+  showScore: boolean
+): Promise<{ success: boolean; message?: string }> {
+  try {
+    const supabase = await createClient();
+
+    const { error } = await supabase
+      .from("exams")
+      .update({
+        show_score: showScore,
+        updated_at: new Date().toISOString(),
+      })
+      .eq("id", id);
+
+    if (error) {
+      return {
+        success: false,
+        message: "Gagal memperbarui visibilitas skor: " + error.message,
+      };
+    }
+
+    revalidatePath("/admin/dasbor");
+    revalidatePath(`/admin/ujian/${id}`);
+    revalidatePath(`/admin/ujian/${id}/pengaturan`);
+    revalidatePath(`/admin/ujian/${id}/soal`);
+
+    return {
+      success: true,
+      message: showScore
+        ? "Skor ujian sekarang akan ditampilkan ke peserta setelah selesai."
+        : "Skor ujian sekarang disembunyikan dari peserta.",
+    };
+  } catch {
+    return {
+      success: false,
+      message: "Terjadi kesalahan saat memperbarui status visibilitas skor.",
+    };
+  }
 }
 
 /**

@@ -923,4 +923,130 @@ export async function submitExamSessionAction(
   }
 }
 
-export { submitExamSessionAction as submitExamSession }
+export { submitExamSessionAction as submitExamSession };
+
+export interface ExamCompletionSummaryResult {
+  success: boolean;
+  message?: string;
+  studentName?: string;
+  studentClass?: string;
+  examTitle?: string;
+  showScore?: boolean;
+  totalScore?: number | null;
+  maxScore?: number;
+  totalQuestions?: number;
+  correctCount?: number;
+  incorrectCount?: number;
+  unansweredCount?: number;
+}
+
+/**
+ * Server Action: Mengambil ringkasan hasil pengerjaan ujian peserta untuk layar konfirmasi penyelesaian.
+ * Menghormati konfigurasi show_score naskah ujian:
+ * - Jika show_score = false, skor dan rincian benar/salah disembunyikan.
+ * - Jika show_score = true, total skor, skor maksimal, serta jumlah butir benar & salah disertakan.
+ */
+export async function getExamCompletionSummaryAction(
+  sessionId: string
+): Promise<ExamCompletionSummaryResult> {
+  try {
+    const supabase = createServiceClient();
+
+    // 1. Ambil data sesi peserta beserta relasi naskah ujian
+    const { data: session, error: sessionError } = await supabase
+      .from("exam_sessions")
+      .select("id, exam_id, student_name, student_class, total_score, is_completed, exams(*)")
+      .eq("id", sessionId)
+      .maybeSingle();
+
+    if (sessionError || !session) {
+      return {
+        success: false,
+        message: "Sesi ujian tidak ditemukan pada sistem.",
+      };
+    }
+
+    const sessionRow = session as unknown as ExamSessionRow & { exams: ExamRow | null };
+    const exam = sessionRow.exams;
+
+    if (!sessionRow.is_completed) {
+      return {
+        success: false,
+        message: "Sesi ujian ini belum diselesaikan.",
+      };
+    }
+
+    const showScore = Boolean(exam?.show_score);
+
+    if (!showScore) {
+      return {
+        success: true,
+        showScore: false,
+        studentName: sessionRow.student_name,
+        studentClass: sessionRow.student_class,
+        examTitle: exam?.title || "Ujian",
+      };
+    }
+
+    // 2. Jika showScore aktif, hitung rincian butir soal benar dan salah
+    const { data: questionsData } = await supabase
+      .from("questions")
+      .select("id, points")
+      .eq("exam_id", sessionRow.exam_id);
+
+    const questions = questionsData || [];
+    const maxScore = questions.reduce((acc, q) => acc + (Number(q.points) || 0), 0);
+
+    const { data: answersData } = await supabase
+      .from("session_answers")
+      .select("question_id, answer_value, awarded_score")
+      .eq("session_id", sessionId);
+
+    const answersMap = new Map<string, { answer_value: unknown; awarded_score: number | null }>();
+    for (const a of answersData || []) {
+      answersMap.set(a.question_id, a);
+    }
+
+    let correctCount = 0;
+    let incorrectCount = 0;
+    let unansweredCount = 0;
+
+    for (const q of questions) {
+      const a = answersMap.get(q.id);
+      const isUnanswered =
+        !a ||
+        a.answer_value === null ||
+        a.answer_value === undefined ||
+        a.answer_value === "" ||
+        (Array.isArray(a.answer_value) && a.answer_value.length === 0);
+
+      if (isUnanswered) {
+        unansweredCount++;
+      } else if (Number(a.awarded_score) > 0) {
+        correctCount++;
+      } else {
+        incorrectCount++;
+      }
+    }
+
+    return {
+      success: true,
+      showScore: true,
+      studentName: sessionRow.student_name,
+      studentClass: sessionRow.student_class,
+      examTitle: exam?.title || "Ujian",
+      totalScore: sessionRow.total_score !== null ? Number(sessionRow.total_score) : null,
+      maxScore,
+      totalQuestions: questions.length,
+      correctCount,
+      incorrectCount,
+      unansweredCount,
+    };
+  } catch (err) {
+    console.error("Gagal mengambil ringkasan penyelesaian ujian:", err);
+    return {
+      success: false,
+      message: "Terjadi gangguan sistem saat memuat hasil ujian.",
+    };
+  }
+}

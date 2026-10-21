@@ -151,7 +151,7 @@ export function ExamRoomShell({ sessionId, initialRecoveryData }: ExamRoomShellP
             localStorage.removeItem("osn_exam_session_storage");
           } catch {}
         }
-        router.replace("/ujian/selesai");
+        router.replace(`/ujian/selesai?session=${sessionId}`);
       } else {
         if (res.sessionInvalid) {
           useExamSessionStore.getState().setSessionTerminated(res.message);
@@ -194,7 +194,7 @@ export function ExamRoomShell({ sessionId, initialRecoveryData }: ExamRoomShellP
           } catch {}
         }
         setIsFinishDialogOpen(false);
-        router.replace("/ujian/selesai");
+        router.replace(`/ujian/selesai?session=${sessionId}`);
       } else {
         if (res.sessionInvalid) {
           useExamSessionStore.getState().setSessionTerminated(res.message);
@@ -303,11 +303,18 @@ export function ExamRoomShell({ sessionId, initialRecoveryData }: ExamRoomShellP
               <div>Total Soal: <strong>{totalQuestions}</strong> butir</div>
               <div>Soal Terjawab: <strong className="text-emerald-600 dark:text-emerald-400">{answeredCount}</strong> butir</div>
             </div>
-            <Link href="/" className="block pt-2">
-              <Button variant="outline" className="w-full">
-                Kembali ke Halaman Utama
-              </Button>
-            </Link>
+            <div className="space-y-2 pt-2">
+              <Link href={`/ujian/selesai?session=${sessionId}`} className="block">
+                <Button className="w-full bg-indigo-600 text-white hover:bg-indigo-700">
+                  Lihat Konfirmasi Penyelesaian
+                </Button>
+              </Link>
+              <Link href="/" className="block">
+                <Button variant="outline" className="w-full">
+                  Kembali ke Halaman Utama
+                </Button>
+              </Link>
+            </div>
           </CardContent>
         </Card>
       </div>

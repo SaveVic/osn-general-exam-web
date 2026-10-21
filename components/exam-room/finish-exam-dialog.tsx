@@ -110,11 +110,6 @@ export function FinishExamDialog({
           </div>
         </div>
 
-        {/* Kalimat Rekapitulasi Resmi Spesifikasi F4-04 */}
-        <p className="rounded-lg bg-slate-100 p-2.5 text-center text-xs text-slate-600 dark:bg-slate-800/80 dark:text-slate-300">
-          Anda telah menjawab <strong>{answeredCount}</strong> dari <strong>{totalQuestions}</strong> soal. Terdapat <strong>{unansweredCount}</strong> soal yang belum dijawab dan <strong>{flaggedCount}</strong> soal bertanda ragu-ragu.
-        </p>
-
         {/* Kotak Galat jika Submit Mengalami Masalah */}
         {errorMessage && (
           <div

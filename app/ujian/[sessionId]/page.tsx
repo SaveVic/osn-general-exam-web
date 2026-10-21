@@ -20,7 +20,7 @@ export default async function ExamSessionPage({ params }: ExamSessionPageProps) 
 
   if (!recovery.success || !recovery.data) {
     if (recovery.isCompleted) {
-      redirect("/ujian/selesai");
+      redirect(`/ujian/selesai?session=${sessionId}`);
     }
 
     // Jika token tidak valid, sesi tidak ditemukan, atau kedaluwarsa

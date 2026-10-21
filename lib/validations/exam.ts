@@ -19,6 +19,7 @@ export const examFormSchema = z
       .array(z.string().trim().min(1, "Nama kelas tidak boleh kosong."))
       .min(1, "Minimal harus ada 1 pilihan kelas untuk peserta."),
     is_published: z.boolean().default(false),
+    show_score: z.boolean().default(false),
   })
   .refine(
     (data) => {

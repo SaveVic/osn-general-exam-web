@@ -15,6 +15,7 @@ export interface ExamRow {
   ends_at: string;
   class_options: string[];
   is_published: boolean;
+  show_score?: boolean;
   created_at: string;
   updated_at: string;
 }

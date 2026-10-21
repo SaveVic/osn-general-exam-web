@@ -26,6 +26,7 @@ import {
   BookOpen,
   CheckCircle2,
   Clock,
+  Eye,
   Globe,
   GraduationCap,
   Loader2,
@@ -261,6 +262,30 @@ export function ExamForm({
               Jika aktif, peserta dapat mengakses informasi ujian menggunakan
               kode rujukan yang sah. Jika nonaktif, ujian berstatus Draf dan
               hanya dapat dilihat oleh pengelola.
+            </p>
+          </div>
+        </label>
+      </div>
+
+      {/* Field: Visibilitas Skor ke Peserta */}
+      <div className='rounded-lg border border-slate-200 bg-slate-50/50 p-4 dark:border-slate-800 dark:bg-slate-900/50'>
+        <label className='flex cursor-pointer items-start gap-3'>
+          <input
+            type='checkbox'
+            name='show_score'
+            defaultChecked={initialData?.show_score ?? false}
+            disabled={isPending}
+            className='mt-0.5 size-4 rounded-xs border-slate-300 text-indigo-600 focus:ring-indigo-500 dark:border-slate-700 dark:bg-slate-950'
+          />
+          <div className='space-y-0.5'>
+            <span className='flex items-center gap-1.5 text-sm font-semibold text-slate-900 dark:text-slate-100'>
+              <Eye className='size-4 text-indigo-600 dark:text-indigo-400' />
+              Tampilkan Skor ke Peserta Setelah Selesai
+            </span>
+            <p className='text-xs text-slate-500 dark:text-slate-400'>
+              Jika aktif, peserta akan melihat skor total serta rincian jumlah
+              soal yang dijawab benar dan salah di layar penyerahan ujian. Jika
+              nonaktif, perolehan skor dan rincian akan disembunyikan.
             </p>
           </div>
         </label>
