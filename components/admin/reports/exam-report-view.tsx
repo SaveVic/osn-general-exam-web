@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useMemo } from "react";
+import React, { useState, useMemo, useEffect } from "react";
 import type { ExamRow } from "@/types/database";
 import {
   formatActualDuration,
@@ -11,6 +11,7 @@ import {
 } from "@/lib/exam/report-csv";
 import { getExamFullAnswersReportAction } from "@/actions/exam-report";
 import { SessionAnswersDetailDialog } from "@/components/admin/reports/session-answers-detail-dialog";
+import { DataTablePagination } from "@/components/admin/data-table-pagination";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
@@ -76,6 +77,23 @@ export function ExamReportView({
       return true;
     });
   }, [sessions, selectedClass, searchQuery]);
+
+  // State Paginasi
+  const [currentPage, setCurrentPage] = useState<number>(1);
+  const [pageSize, setPageSize] = useState<number>(25);
+
+  const totalPages = Math.max(1, Math.ceil(filteredSessions.length / pageSize));
+
+  // Reset ke halaman 1 saat filter, pencarian, atau ukuran halaman berubah
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [selectedClass, searchQuery, pageSize]);
+
+  // Data terpaginasi yang dirender pada tabel
+  const paginatedSessions = useMemo(() => {
+    const start = (currentPage - 1) * pageSize;
+    return filteredSessions.slice(start, start + pageSize);
+  }, [filteredSessions, currentPage, pageSize]);
 
   // Statistik ringkas
   const stats = useMemo(() => {
@@ -325,13 +343,13 @@ export function ExamReportView({
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-100 dark:divide-slate-800/70">
-                {filteredSessions.map((session, index) => (
+                {paginatedSessions.map((session, index) => (
                   <tr
                     key={session.id}
                     className="transition-colors hover:bg-slate-50/60 dark:hover:bg-slate-800/30"
                   >
                     <td className="px-4 py-3 text-center font-mono text-slate-500 dark:text-slate-400">
-                      {index + 1}
+                      {(currentPage - 1) * pageSize + index + 1}
                     </td>
                     <td className="px-4 py-3 font-medium text-slate-900 dark:text-slate-100">
                       {session.studentName}
@@ -391,6 +409,18 @@ export function ExamReportView({
               </tbody>
             </table>
           </div>
+        )}
+
+        {/* Kontrol Paginasi Tabel */}
+        {filteredSessions.length > 0 && (
+          <DataTablePagination
+            currentPage={currentPage}
+            totalPages={totalPages}
+            pageSize={pageSize}
+            totalItems={filteredSessions.length}
+            onPageChange={setCurrentPage}
+            onPageSizeChange={setPageSize}
+          />
         )}
       </div>
 

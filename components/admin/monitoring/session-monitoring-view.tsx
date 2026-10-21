@@ -12,6 +12,7 @@ import {
   formatActualDuration,
   formatReportTimestamp,
 } from "@/lib/exam/report-csv";
+import { DataTablePagination } from "@/components/admin/data-table-pagination";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
@@ -190,6 +191,23 @@ export function SessionMonitoringView({
       return true;
     });
   }, [sessions, statusFilter, selectedClass, searchQuery]);
+
+  // State Paginasi
+  const [currentPage, setCurrentPage] = useState<number>(1);
+  const [pageSize, setPageSize] = useState<number>(25);
+
+  const totalPages = Math.max(1, Math.ceil(filteredSessions.length / pageSize));
+
+  // Reset ke halaman 1 saat filter status, kelas, pencarian, atau ukuran halaman berubah
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [statusFilter, selectedClass, searchQuery, pageSize]);
+
+  // Data terpaginasi yang dirender pada tabel
+  const paginatedSessions = useMemo(() => {
+    const start = (currentPage - 1) * pageSize;
+    return filteredSessions.slice(start, start + pageSize);
+  }, [filteredSessions, currentPage, pageSize]);
 
   // Eksekusi aksi darurat Paksa Kumpulkan (Force Submit)
   const handleConfirmForceSubmit = async () => {
@@ -528,7 +546,7 @@ export function SessionMonitoringView({
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-100 dark:divide-slate-800/70">
-                {filteredSessions.map((session, index) => {
+                {paginatedSessions.map((session, index) => {
                   const timing = getLiveTimingInfo(session);
 
                   return (
@@ -537,7 +555,7 @@ export function SessionMonitoringView({
                       className="transition-colors hover:bg-slate-50/60 dark:hover:bg-slate-800/30"
                     >
                       <td className="px-4 py-3.5 text-center font-mono text-slate-500 tabular-nums dark:text-slate-400">
-                        {index + 1}
+                        {(currentPage - 1) * pageSize + index + 1}
                       </td>
                       <td className="px-4 py-3.5">
                         <div className="font-semibold text-slate-900 dark:text-slate-100">
@@ -614,6 +632,18 @@ export function SessionMonitoringView({
               </tbody>
             </table>
           </div>
+        )}
+
+        {/* Kontrol Paginasi Tabel */}
+        {filteredSessions.length > 0 && (
+          <DataTablePagination
+            currentPage={currentPage}
+            totalPages={totalPages}
+            pageSize={pageSize}
+            totalItems={filteredSessions.length}
+            onPageChange={setCurrentPage}
+            onPageSizeChange={setPageSize}
+          />
         )}
       </div>
 
