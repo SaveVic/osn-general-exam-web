@@ -42,7 +42,7 @@ export function DataTablePagination({
             aria-label="Pilih jumlah baris per halaman"
             value={pageSize}
             onChange={(e) => onPageSizeChange(Number(e.target.value))}
-            className="h-8 rounded-lg border border-slate-200 bg-white px-2 text-xs font-medium text-slate-700 shadow-2xs focus:border-indigo-500 focus:outline-none dark:border-slate-700 dark:bg-slate-800 dark:text-slate-200 cursor-pointer"
+            className="h-8 cursor-pointer rounded-lg border border-slate-200 bg-white px-2 text-xs font-medium text-slate-700 shadow-2xs focus:border-indigo-500 focus:outline-none dark:border-slate-700 dark:bg-slate-800 dark:text-slate-200"
           >
             {pageSizeOptions.map((opt) => (
               <option key={opt} value={opt}>
@@ -91,7 +91,7 @@ export function DataTablePagination({
           onClick={() => onPageChange(1)}
           disabled={currentPage <= 1}
           aria-label="Ke halaman pertama"
-          className="size-8 p-0 cursor-pointer disabled:cursor-not-allowed"
+          className="size-8 cursor-pointer p-0 disabled:cursor-not-allowed"
         >
           <ChevronsLeft className="size-4" />
         </Button>
@@ -104,7 +104,7 @@ export function DataTablePagination({
           onClick={() => onPageChange(currentPage - 1)}
           disabled={currentPage <= 1}
           aria-label="Ke halaman sebelumnya"
-          className="size-8 p-0 cursor-pointer disabled:cursor-not-allowed"
+          className="size-8 cursor-pointer p-0 disabled:cursor-not-allowed"
         >
           <ChevronLeft className="size-4" />
         </Button>
@@ -117,7 +117,7 @@ export function DataTablePagination({
           onClick={() => onPageChange(currentPage + 1)}
           disabled={currentPage >= safeTotalPages}
           aria-label="Ke halaman berikutnya"
-          className="size-8 p-0 cursor-pointer disabled:cursor-not-allowed"
+          className="size-8 cursor-pointer p-0 disabled:cursor-not-allowed"
         >
           <ChevronRight className="size-4" />
         </Button>
@@ -130,7 +130,7 @@ export function DataTablePagination({
           onClick={() => onPageChange(safeTotalPages)}
           disabled={currentPage >= safeTotalPages}
           aria-label="Ke halaman terakhir"
-          className="size-8 p-0 cursor-pointer disabled:cursor-not-allowed"
+          className="size-8 cursor-pointer p-0 disabled:cursor-not-allowed"
         >
           <ChevronsRight className="size-4" />
         </Button>

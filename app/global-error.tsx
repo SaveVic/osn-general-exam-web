@@ -15,10 +15,10 @@ export default function GlobalError({ error, reset }: GlobalErrorProps) {
 
   return (
     <html lang="id">
-      <body className="min-h-screen flex items-center justify-center bg-slate-50 px-4 py-12 font-sans text-slate-900 antialiased dark:bg-slate-950 dark:text-slate-50">
-        <div className="w-full max-w-md rounded-2xl border border-slate-200 bg-white p-8 shadow-xl text-center dark:border-slate-800 dark:bg-slate-900">
-          <div className="mx-auto mb-5 flex h-14 w-14 items-center justify-center rounded-full bg-rose-100 text-rose-600 dark:bg-rose-950/60 dark:text-rose-400">
-            <AlertTriangle className="h-7 w-7" aria-hidden="true" />
+      <body className="flex min-h-screen items-center justify-center bg-slate-50 px-4 py-12 font-sans text-slate-900 antialiased dark:bg-slate-950 dark:text-slate-50">
+        <div className="w-full max-w-md rounded-2xl border border-slate-200 bg-white p-8 text-center shadow-xl dark:border-slate-800 dark:bg-slate-900">
+          <div className="mx-auto mb-5 flex size-14 items-center justify-center rounded-full bg-rose-100 text-rose-600 dark:bg-rose-950/60 dark:text-rose-400">
+            <AlertTriangle className="size-7" aria-hidden="true" />
           </div>
 
           <h1 className="text-xl font-bold tracking-tight text-slate-900 dark:text-white">
@@ -30,7 +30,7 @@ export default function GlobalError({ error, reset }: GlobalErrorProps) {
           </p>
 
           {error.digest && (
-            <div className="mt-4 rounded-md bg-slate-100 px-3 py-1.5 text-xs font-mono text-slate-500 dark:bg-slate-800 dark:text-slate-400">
+            <div className="mt-4 rounded-md bg-slate-100 px-3 py-1.5 font-mono text-xs text-slate-500 dark:bg-slate-800 dark:text-slate-400">
               ID Referensi: {error.digest}
             </div>
           )}
@@ -39,9 +39,9 @@ export default function GlobalError({ error, reset }: GlobalErrorProps) {
             <button
               type="button"
               onClick={() => reset()}
-              className="inline-flex items-center justify-center gap-2 rounded-lg bg-indigo-600 px-5 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:bg-indigo-700 active:scale-[0.98] cursor-pointer"
+              className="inline-flex cursor-pointer items-center justify-center gap-2 rounded-lg bg-indigo-600 px-5 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:bg-indigo-700 active:scale-95"
             >
-              <RefreshCw className="h-4 w-4" />
+              <RefreshCw className="size-4" />
               Muat Ulang Aplikasi
             </button>
           </div>

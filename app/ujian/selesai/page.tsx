@@ -67,7 +67,7 @@ export default async function ExamFinishedPage({ searchParams }: ExamFinishedPag
             /* Box Hasil Ujian: Skor Total, Soal Benar, dan Soal Salah */
             <div className="space-y-3">
               <div className="rounded-xl border border-indigo-100 bg-indigo-50/60 p-4 text-center dark:border-indigo-950 dark:bg-indigo-950/30">
-                <div className="flex items-center justify-center gap-1.5 text-xs font-semibold uppercase tracking-wider text-indigo-700 dark:text-indigo-300">
+                <div className="flex items-center justify-center gap-1.5 text-xs font-semibold tracking-wider text-indigo-700 uppercase dark:text-indigo-300">
                   <Award className="size-4" />
                   <span>Total Skor Perolehan</span>
                 </div>

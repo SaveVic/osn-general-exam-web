@@ -287,7 +287,7 @@ export function ExamReportView({
             type="button"
             onClick={handleExportCsv}
             disabled={filteredSessions.length === 0}
-            className="h-9 gap-1.5 bg-emerald-600 text-xs font-semibold text-white hover:bg-emerald-700 dark:bg-emerald-600 dark:hover:bg-emerald-700 cursor-pointer"
+            className="h-9 cursor-pointer gap-1.5 bg-emerald-600 text-xs font-semibold text-white hover:bg-emerald-700 dark:bg-emerald-600 dark:hover:bg-emerald-700"
           >
             <Download className="size-3.5" />
             <span>Ekspor Nilai (CSV)</span>
@@ -298,7 +298,7 @@ export function ExamReportView({
             variant="outline"
             onClick={handleExportFullAnswersCsv}
             disabled={filteredSessions.length === 0 || isExportingFull}
-            className="h-9 gap-1.5 text-xs font-semibold text-indigo-700 border-indigo-200 hover:bg-indigo-50 dark:text-indigo-300 dark:border-indigo-800 dark:hover:bg-indigo-950/50 cursor-pointer"
+            className="h-9 cursor-pointer gap-1.5 border-indigo-200 text-xs font-semibold text-indigo-700 hover:bg-indigo-50 dark:border-indigo-800 dark:text-indigo-300 dark:hover:bg-indigo-950/50"
           >
             {isExportingFull ? (
               <Loader2 className="size-3.5 animate-spin" />
@@ -397,7 +397,7 @@ export function ExamReportView({
                         variant="ghost"
                         size="icon"
                         onClick={() => setSelectedSessionDetailId(session.id)}
-                        className="size-8 text-slate-500 hover:text-indigo-600 hover:bg-indigo-50 dark:text-slate-400 dark:hover:text-indigo-400 dark:hover:bg-indigo-950/50 cursor-pointer"
+                        className="size-8 cursor-pointer text-slate-500 hover:bg-indigo-50 hover:text-indigo-600 dark:text-slate-400 dark:hover:bg-indigo-950/50 dark:hover:text-indigo-400"
                         title="Lihat Detail Jawaban"
                         aria-label="Lihat Detail Jawaban"
                       >

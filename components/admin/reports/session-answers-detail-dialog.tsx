@@ -79,8 +79,8 @@ export function SessionAnswersDetailDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-h-[90vh] max-w-3xl overflow-hidden flex flex-col p-0">
-        <DialogHeader className="border-b border-slate-200 px-6 py-4 dark:border-slate-800 shrink-0">
+      <DialogContent className="flex max-h-[90vh] max-w-3xl flex-col overflow-hidden p-0">
+        <DialogHeader className="shrink-0 border-b border-slate-200 px-6 py-4 dark:border-slate-800">
           <div className="flex items-start justify-between gap-4">
             <div>
               <DialogTitle className="text-lg font-bold text-slate-900 dark:text-slate-100">
@@ -118,7 +118,7 @@ export function SessionAnswersDetailDialog({
           )}
         </DialogHeader>
 
-        <div className="flex-1 overflow-y-auto p-6 scrollbar-thin">
+        <div className="flex-1 scrollbar-thin overflow-y-auto p-6">
           {isLoading ? (
             <div className="flex flex-col items-center justify-center py-16 text-center text-slate-400">
               <Loader2 className="size-8 animate-spin text-indigo-600 dark:text-indigo-400" />
@@ -154,7 +154,7 @@ export function SessionAnswersDetailDialog({
                         </span>
                         <Badge
                           variant="outline"
-                          className="text-[10px] font-medium uppercase tracking-wider text-slate-500"
+                          className="text-[10px] font-medium tracking-wider text-slate-500 uppercase"
                         >
                           {q.questionType === "single_choice"
                             ? "Pilihan Ganda"
@@ -203,20 +203,20 @@ export function SessionAnswersDetailDialog({
                     </div>
 
                     {/* Pratinjau Teks Soal */}
-                    <div className="mt-2.5 text-xs text-slate-700 dark:text-slate-300 leading-relaxed font-medium">
+                    <div className="mt-2.5 text-xs leading-relaxed font-medium text-slate-700 dark:text-slate-300">
                       {q.promptPreview}
                     </div>
 
                     {/* Komparasi Jawaban */}
                     <div className="mt-3.5 grid grid-cols-1 gap-2.5 rounded-lg border border-slate-100 bg-slate-50/70 p-3 sm:grid-cols-2 dark:border-slate-800/60 dark:bg-slate-950/40">
                       <div>
-                        <div className="text-[10px] font-semibold uppercase tracking-wider text-slate-400 dark:text-slate-500">
+                        <div className="text-[10px] font-semibold tracking-wider text-slate-400 uppercase dark:text-slate-500">
                           Jawaban Peserta
                         </div>
                         <div
                           className={`mt-1 font-mono text-xs font-semibold ${
                             isUnanswered
-                              ? "italic text-slate-400"
+                              ? "text-slate-400 italic"
                               : isCorrect
                               ? "text-emerald-700 dark:text-emerald-300"
                               : "text-rose-700 dark:text-rose-300"
@@ -229,7 +229,7 @@ export function SessionAnswersDetailDialog({
                       </div>
 
                       <div>
-                        <div className="text-[10px] font-semibold uppercase tracking-wider text-slate-400 dark:text-slate-500">
+                        <div className="text-[10px] font-semibold tracking-wider text-slate-400 uppercase dark:text-slate-500">
                           Kunci / Jawaban Benar
                         </div>
                         <div className="mt-1 font-mono text-xs font-semibold text-slate-900 dark:text-slate-100">
@@ -244,7 +244,7 @@ export function SessionAnswersDetailDialog({
           )}
         </div>
 
-        <DialogFooter className="border-t border-slate-200 px-6 py-3 dark:border-slate-800 shrink-0">
+        <DialogFooter className="shrink-0 border-t border-slate-200 px-6 py-3 dark:border-slate-800">
           <Button
             type="button"
             variant="outline"
