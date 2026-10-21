@@ -369,6 +369,7 @@ describe("F5-01: Auto-Scoring Engine (ADM-SCOR-01)", () => {
           return {
             select: vi.fn(() => ({
               eq: vi.fn(async () => ({ data: [], error: null })),
+              in: vi.fn(async () => ({ data: [], error: null })),
             })),
             upsert: vi.fn(async () => ({ error: null })),
           };

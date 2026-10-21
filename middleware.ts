@@ -3,11 +3,14 @@ import { updateSession } from "@/lib/supabase/middleware";
 
 export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
-  const { supabaseResponse, user } = await updateSession(request);
 
-  // Proteksi rute admin (seluruh /admin/* kecuali /admin/masuk)
-  if (pathname.startsWith("/admin") && pathname !== "/admin/masuk") {
-    if (!user) {
+  // 1. Proteksi & manajemen sesi rute admin (hanya dieksekusi untuk /admin/*)
+  // Menghindarkan pemanggilan Supabase Auth pada rute peserta (/ dan /ujian/*)
+  if (pathname.startsWith("/admin")) {
+    const { supabaseResponse, user } = await updateSession(request);
+
+    // Jika belum login dan mencoba mengakses area terproteksi /admin/*
+    if (pathname !== "/admin/masuk" && !user) {
       const loginUrl = request.nextUrl.clone();
       loginUrl.pathname = "/admin/masuk";
       loginUrl.searchParams.set("pesan", "Sesi berakhir. Silakan masuk kembali.");
@@ -18,36 +21,35 @@ export async function middleware(request: NextRequest) {
       });
       return redirectResponse;
     }
-  }
 
-  // Jika admin sudah login dan mengakses / atau /admin/masuk, alihkan ke /admin/dasbor
-  if ((pathname === "/admin/masuk" || pathname === "/") && user) {
-    const dashboardUrl = request.nextUrl.clone();
-    dashboardUrl.pathname = "/admin/dasbor";
-    dashboardUrl.searchParams.delete("pesan");
+    // Jika sudah login dan membuka halaman masuk /admin/masuk
+    if (pathname === "/admin/masuk" && user) {
+      const dashboardUrl = request.nextUrl.clone();
+      dashboardUrl.pathname = "/admin/dasbor";
+      dashboardUrl.searchParams.delete("pesan");
 
-    const redirectResponse = NextResponse.redirect(dashboardUrl);
-    supabaseResponse.cookies.getAll().forEach((cookie) => {
-      redirectResponse.cookies.set(cookie.name, cookie.value, cookie);
-    });
-    return redirectResponse;
-  }
-
-  // Proteksi rute ruang ujian peserta (/ujian/* selain /ujian/selesai)
-  if (pathname.startsWith("/ujian") && pathname !== "/ujian/selesai") {
-    const examToken = request.cookies.get("exam_token")?.value;
-    if (!examToken) {
-      const gateUrl = request.nextUrl.clone();
-      gateUrl.pathname = "/";
-      const redirectResponse = NextResponse.redirect(gateUrl);
+      const redirectResponse = NextResponse.redirect(dashboardUrl);
       supabaseResponse.cookies.getAll().forEach((cookie) => {
         redirectResponse.cookies.set(cookie.name, cookie.value, cookie);
       });
       return redirectResponse;
     }
+
+    return supabaseResponse;
   }
 
-  return supabaseResponse;
+  // 2. Proteksi rute ruang ujian peserta (/ujian/* selain /ujian/selesai)
+  // Cukup verifikasi keberadaan cookie exam_token tanpa memanggil Supabase Auth
+  if (pathname.startsWith("/ujian") && pathname !== "/ujian/selesai") {
+    const examToken = request.cookies.get("exam_token")?.value;
+    if (!examToken) {
+      const gateUrl = request.nextUrl.clone();
+      gateUrl.pathname = "/";
+      return NextResponse.redirect(gateUrl);
+    }
+  }
+
+  return NextResponse.next();
 }
 
 export const config = {

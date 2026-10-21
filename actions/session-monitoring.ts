@@ -116,93 +116,129 @@ export async function getExamMonitoringData(
       }
     }
 
-    // 3. Ambil seluruh sesi peserta untuk ujian ini
-    const sessionTable = supabase.from("exam_sessions");
-    if (!sessionTable || typeof sessionTable.select !== "function") {
-      return {
-        success: false,
-        message: "Klien database tidak mendukung kueri sesi peserta.",
-      };
+    // 3. Ambil data sesi pemantauan (Coba via database view v_exam_session_monitoring terlebih dahulu)
+    let sessions: MonitoredSessionRow[] = [];
+
+    try {
+      const viewTable = supabase.from("v_exam_session_monitoring");
+      if (viewTable && typeof viewTable.select === "function") {
+        const { data: viewData, error: viewError } = await viewTable
+          .select(
+            "id, student_name, student_class, started_at, submitted_at, is_completed, total_score, answered_count, last_synced_at"
+          )
+          .eq("exam_id", examId)
+          .order("started_at", { ascending: true });
+
+        if (!viewError && Array.isArray(viewData)) {
+          sessions = viewData.map((s) => ({
+            id: s.id,
+            studentName: s.student_name,
+            studentClass: s.student_class,
+            startedAt: s.started_at,
+            submittedAt: s.submitted_at ?? null,
+            isCompleted: Boolean(s.is_completed),
+            totalScore:
+              s.total_score !== null && s.total_score !== undefined
+                ? Number(s.total_score)
+                : null,
+            answeredCount: Number(s.answered_count) || 0,
+            lastSyncedAt: s.last_synced_at ?? null,
+          }));
+        }
+      }
+    } catch {
+      // Beralih ke fallback manual jika view belum terpasang
     }
 
-    const { data: sessionsData, error: sessionsError } = await sessionTable
-      .select(
-        "id, student_name, student_class, started_at, submitted_at, is_completed, total_score"
-      )
-      .eq("exam_id", examId)
-      .order("started_at", { ascending: true });
+    // Jika view belum terpasang atau mengembalikan array kosong, gunakan kueri fallback
+    if (sessions.length === 0) {
+      const sessionTable = supabase.from("exam_sessions");
+      if (!sessionTable || typeof sessionTable.select !== "function") {
+        return {
+          success: false,
+          message: "Klien database tidak mendukung kueri sesi peserta.",
+        };
+      }
 
-    if (sessionsError) {
-      console.error(
-        "Gagal mengambil daftar sesi untuk pemantauan:",
-        sessionsError.message
-      );
-      return {
-        success: false,
-        message: "Gagal memuat daftar sesi peserta ujian.",
-      };
-    }
+      const { data: sessionsData, error: sessionsError } = await sessionTable
+        .select(
+          "id, student_name, student_class, started_at, submitted_at, is_completed, total_score"
+        )
+        .eq("exam_id", examId)
+        .order("started_at", { ascending: true });
 
-    const sessionList = sessionsData || [];
-    const sessionIds = sessionList.map((s) => s.id);
+      if (sessionsError) {
+        console.error(
+          "Gagal mengambil daftar sesi untuk pemantauan:",
+          sessionsError.message
+        );
+        return {
+          success: false,
+          message: "Gagal memuat daftar sesi peserta ujian.",
+        };
+      }
 
-    // 4. Ambil ringkasan jawaban untuk menghitung progres & waktu sinkronisasi terakhir per sesi
-    const syncStatsMap = new Map<
-      string,
-      { answeredCount: number; lastSyncedAt: string | null }
-    >();
+      const sessionList = sessionsData || [];
+      const sessionIds = sessionList.map((s) => s.id);
 
-    if (sessionIds.length > 0) {
-      const answersTable = supabase.from("session_answers");
-      if (answersTable && typeof answersTable.select === "function") {
-        const { data: answersData, error: answersError } = await answersTable
-          .select("session_id, answer_value, last_updated_at")
-          .in("session_id", sessionIds);
+      // 4. Ambil ringkasan jawaban untuk menghitung progres & waktu sinkronisasi terakhir per sesi
+      const syncStatsMap = new Map<
+        string,
+        { answeredCount: number; lastSyncedAt: string | null }
+      >();
 
-        if (!answersError && Array.isArray(answersData)) {
-          for (const ans of answersData) {
-            const current = syncStatsMap.get(ans.session_id) ?? {
-              answeredCount: 0,
-              lastSyncedAt: null,
-            };
+      if (sessionIds.length > 0) {
+        const answersTable = supabase.from("session_answers");
+        if (answersTable && typeof answersTable.select === "function") {
+          const { data: answersData, error: answersError } = await answersTable
+            .select("session_id, answer_value, last_updated_at")
+            .in("session_id", sessionIds);
 
-            if (isAnswerFilled(ans.answer_value as Json)) {
-              current.answeredCount += 1;
-            }
+          if (!answersError && Array.isArray(answersData)) {
+            for (const ans of answersData) {
+              const current = syncStatsMap.get(ans.session_id) ?? {
+                answeredCount: 0,
+                lastSyncedAt: null,
+              };
 
-            if (ans.last_updated_at) {
-              if (
-                !current.lastSyncedAt ||
-                new Date(ans.last_updated_at).getTime() >
-                  new Date(current.lastSyncedAt).getTime()
-              ) {
-                current.lastSyncedAt = ans.last_updated_at;
+              if (isAnswerFilled(ans.answer_value as Json)) {
+                current.answeredCount += 1;
               }
-            }
 
-            syncStatsMap.set(ans.session_id, current);
+              if (ans.last_updated_at) {
+                if (
+                  !current.lastSyncedAt ||
+                  new Date(ans.last_updated_at).getTime() >
+                    new Date(current.lastSyncedAt).getTime()
+                ) {
+                  current.lastSyncedAt = ans.last_updated_at;
+                }
+              }
+
+              syncStatsMap.set(ans.session_id, current);
+            }
           }
         }
       }
-    }
 
-    const sessions: MonitoredSessionRow[] = sessionList.map((s) => {
-      const syncStats = syncStatsMap.get(s.id);
-      return {
-        id: s.id,
-        studentName: s.student_name,
-        studentClass: s.student_class,
-        startedAt: s.started_at,
-        submittedAt: s.submitted_at ?? null,
-        isCompleted: Boolean(s.is_completed),
-        totalScore:
-          s.total_score !== null && s.total_score !== undefined
-            ? Number(s.total_score)
-            : null,
-        answeredCount: syncStats?.answeredCount ?? 0,
-        lastSyncedAt: syncStats?.lastSyncedAt ?? null,
-      };
-    });
+      sessions = sessionList.map((s) => {
+        const syncStats = syncStatsMap.get(s.id);
+        return {
+          id: s.id,
+          studentName: s.student_name,
+          studentClass: s.student_class,
+          startedAt: s.started_at,
+          submittedAt: s.submitted_at ?? null,
+          isCompleted: Boolean(s.is_completed),
+          totalScore:
+            s.total_score !== null && s.total_score !== undefined
+              ? Number(s.total_score)
+              : null,
+          answeredCount: syncStats?.answeredCount ?? 0,
+          lastSyncedAt: syncStats?.lastSyncedAt ?? null,
+        };
+      });
+    }
 
     return {
       success: true,

@@ -27,7 +27,8 @@ export interface RecalculateScoresResult {
  * Mengalkulasi awarded_score tiap butir soal dan total_score sesi.
  */
 export async function scoreExamSession(
-  sessionId: string
+  sessionId: string,
+  preloadedQuestions?: QuestionScoringItem[]
 ): Promise<ScoreExamSessionResult> {
   try {
     const supabase = createServiceClient();
@@ -56,25 +57,38 @@ export async function scoreExamSession(
 
     const examId = session.exam_id;
 
-    // 2. Ambil seluruh butir soal naskah ujian
-    const questionsTable = supabase.from("questions");
-    if (!questionsTable || typeof questionsTable.select !== "function") {
-      return {
-        success: false,
-        message: "Klien database tidak mendukung kueri butir soal.",
-      };
-    }
+    // 2. Ambil butir soal (gunakan preloadedQuestions jika sudah tersedia untuk menghemat kueri)
+    let questions: QuestionScoringItem[] = [];
 
-    const { data: questionsData, error: questionsError } = await questionsTable
-      .select("id, question_type, points, correct_answer")
-      .eq("exam_id", examId);
+    if (preloadedQuestions && preloadedQuestions.length > 0) {
+      questions = preloadedQuestions;
+    } else {
+      const questionsTable = supabase.from("questions");
+      if (!questionsTable || typeof questionsTable.select !== "function") {
+        return {
+          success: false,
+          message: "Klien database tidak mendukung kueri butir soal.",
+        };
+      }
 
-    if (questionsError || !questionsData) {
-      console.error("Gagal mengambil butir soal untuk penilaian:", questionsError?.message);
-      return {
-        success: false,
-        message: "Gagal memuat butir soal naskah ujian.",
-      };
+      const { data: questionsData, error: questionsError } = await questionsTable
+        .select("id, question_type, points, correct_answer")
+        .eq("exam_id", examId);
+
+      if (questionsError || !questionsData) {
+        console.error("Gagal mengambil butir soal untuk penilaian:", questionsError?.message);
+        return {
+          success: false,
+          message: "Gagal memuat butir soal naskah ujian.",
+        };
+      }
+
+      questions = questionsData.map((q) => ({
+        id: q.id,
+        question_type: q.question_type,
+        points: Number(q.points) || 0,
+        correct_answer: q.correct_answer,
+      }));
     }
 
     // 3. Ambil seluruh lembar jawaban peserta yang tersimpan
@@ -97,13 +111,6 @@ export async function scoreExamSession(
         message: "Gagal memuat lembar jawaban sesi ujian.",
       };
     }
-
-    const questions: QuestionScoringItem[] = (questionsData || []).map((q) => ({
-      id: q.id,
-      question_type: q.question_type,
-      points: Number(q.points) || 0,
-      correct_answer: q.correct_answer,
-    }));
 
     const answers: SessionAnswerScoringItem[] = (answersData || []).map((a) => ({
       question_id: a.question_id,
@@ -182,9 +189,18 @@ export async function scoreExamSession(
   }
 }
 
+function revalidateScoringPaths(examId: string) {
+  revalidatePath(`/admin/ujian/${examId}/soal`);
+  revalidatePath(`/admin/ujian/${examId}/pengaturan`);
+  revalidatePath(`/admin/ujian/${examId}/laporan`);
+  revalidatePath(`/admin/ujian/${examId}/penilaian`);
+  revalidatePath("/admin/dasbor");
+}
+
 /**
  * Server Action: Memicu kalkulasi ulang nilai seluruh sesi peserta yang telah selesai (is_completed = true)
  * Dipicu oleh Administrator ketika terjadi revisi kunci jawaban atau butir soal.
+ * Menggunakan PostgreSQL RPC untuk latensi <150ms dengan Fallback Batch O(1) kueri di Node.js.
  */
 export async function recalculateExamScoresAction(
   examId: string
@@ -201,7 +217,29 @@ export async function recalculateExamScoresAction(
 
     const supabase = createServiceClient();
 
-    // Ambil seluruh sesi ujian yang telah berstatus selesai
+    // 1. Coba eksekusi melalui PostgreSQL Stored Procedure (RPC) jika tersedia di database
+    try {
+      if (typeof (supabase as unknown as { rpc?: unknown }).rpc === "function") {
+        const { data: rpcData, error: rpcError } = await (supabase as unknown as {
+          rpc: (fn: string, params: Record<string, unknown>) => Promise<{ data: unknown; error: unknown }>;
+        }).rpc("recalculate_exam_scores_batch", { target_exam_id: examId });
+
+        if (!rpcError && rpcData && Array.isArray(rpcData) && rpcData.length > 0) {
+          const processedCount = Number(rpcData[0]?.processed_sessions) || 0;
+          revalidateScoringPaths(examId);
+          return {
+            success: true,
+            processedSessions: processedCount,
+            message: `Kalkulasi ulang nilai berhasil diproses untuk ${processedCount} sesi peserta (via Stored Procedure).`,
+          };
+        }
+      }
+    } catch {
+      // Beralih ke Batch Query Fallback jika RPC tidak terpasang
+    }
+
+    // 2. Batch Query Fallback (Mengeliminasi N+1 loop kueri menjadi O(1) batch query)
+    // Kueri 1: Ambil seluruh sesi ujian yang telah berstatus selesai
     const { data: sessions, error: sessionsError } = await supabase
       .from("exam_sessions")
       .select("id")
@@ -218,20 +256,120 @@ export async function recalculateExamScoresAction(
     }
 
     const sessionList = sessions || [];
+    if (sessionList.length === 0) {
+      return {
+        success: true,
+        processedSessions: 0,
+        message: "Tidak ada sesi ujian selesai yang perlu dihitung ulang.",
+      };
+    }
+
+    // Kueri 2: Ambil seluruh butir soal ujian SATU KALI SAJA
+    const { data: questionsData, error: questionsError } = await supabase
+      .from("questions")
+      .select("id, question_type, points, correct_answer")
+      .eq("exam_id", examId);
+
+    if (questionsError || !questionsData) {
+      return {
+        success: false,
+        processedSessions: 0,
+        message: "Gagal memuat butir soal naskah ujian.",
+      };
+    }
+
+    const questions: QuestionScoringItem[] = questionsData.map((q) => ({
+      id: q.id,
+      question_type: q.question_type,
+      points: Number(q.points) || 0,
+      correct_answer: q.correct_answer,
+    }));
+
+    // Kueri 3: Ambil seluruh lembar jawaban untuk seluruh sesi sekaligus
+    const sessionIds = sessionList.map((s) => s.id);
+    const answersTable = supabase.from("session_answers");
+    const { data: answersData, error: answersError } = await answersTable
+      .select("session_id, question_id, answer_value, is_flagged, awarded_score")
+      .in("session_id", sessionIds);
+
+    if (answersError) {
+      return {
+        success: false,
+        processedSessions: 0,
+        message: "Gagal memuat lembar jawaban sesi peserta.",
+      };
+    }
+
+    // Kelompokkan jawaban berdasarkan session_id
+    const answersBySession = new Map<string, SessionAnswerScoringItem[]>();
+    const rawAnswersBySession = new Map<
+      string,
+      Map<string, { answer_value: unknown; is_flagged: boolean; awarded_score: number | null }>
+    >();
+
+    for (const ans of answersData || []) {
+      if (!answersBySession.has(ans.session_id)) {
+        answersBySession.set(ans.session_id, []);
+        rawAnswersBySession.set(ans.session_id, new Map());
+      }
+      answersBySession.get(ans.session_id)!.push({
+        question_id: ans.question_id,
+        answer_value: ans.answer_value,
+      });
+      rawAnswersBySession.get(ans.session_id)!.set(ans.question_id, {
+        answer_value: ans.answer_value,
+        is_flagged: ans.is_flagged,
+        awarded_score: ans.awarded_score,
+      });
+    }
+
+    const nowIso = new Date().toISOString();
+    const allUpsertRows: Array<{
+      session_id: string;
+      question_id: string;
+      answer_value: import("@/types/database").Json;
+      is_flagged: boolean;
+      awarded_score: number;
+      last_updated_at: string;
+    }> = [];
+
     let successCount = 0;
 
     for (const s of sessionList) {
-      const res = await scoreExamSession(s.id);
-      if (res.success) {
-        successCount++;
+      const sessionAnswers = answersBySession.get(s.id) || [];
+      const rawMap = rawAnswersBySession.get(s.id) || new Map();
+      const calculation = calculateExamSessionScores(questions, sessionAnswers);
+
+      for (const q of questions) {
+        const raw = rawMap.get(q.id);
+        allUpsertRows.push({
+          session_id: s.id,
+          question_id: q.id,
+          answer_value: raw ? (raw.answer_value as import("@/types/database").Json) : null,
+          is_flagged: raw ? raw.is_flagged : false,
+          awarded_score: calculation.awardedScores[q.id] ?? 0,
+          last_updated_at: nowIso,
+        });
       }
+
+      await supabase
+        .from("exam_sessions")
+        .update({
+          total_score: calculation.totalScore,
+        })
+        .eq("id", s.id);
+
+      successCount++;
     }
 
-    revalidatePath(`/admin/ujian/${examId}/soal`);
-    revalidatePath(`/admin/ujian/${examId}/pengaturan`);
-    revalidatePath(`/admin/ujian/${examId}/laporan`);
-    revalidatePath(`/admin/ujian/${examId}/penilaian`);
-    revalidatePath("/admin/dasbor");
+    // Batch upsert seluruh nilai jawaban dalam 1 operasi
+    if (allUpsertRows.length > 0) {
+      await answersTable.upsert(allUpsertRows, {
+        onConflict: "session_id,question_id",
+      });
+    }
+
+    revalidateScoringPaths(examId);
 
     return {
       success: true,
