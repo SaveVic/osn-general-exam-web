@@ -1,11 +1,13 @@
 "use client";
 
-import { Suspense, useEffect } from "react";
+import { Suspense, useEffect, useState } from "react";
 import { useExamGateStore } from "@/lib/stores/exam-gate-store";
 import { ReferralGateCard } from "@/components/gate/referral-gate-card";
 import { ExamLobbyCard } from "@/components/gate/exam-lobby-card";
+import { ActiveSessionResumeCard } from "@/components/gate/active-session-resume-card";
 import { Card, CardContent } from "@/components/ui/card";
 import { Loader2 } from "lucide-react";
+import type { ActiveSessionResumeData } from "@/actions/exam-session";
 
 function GateCardSkeleton() {
   return (
@@ -20,9 +22,14 @@ function GateCardSkeleton() {
   );
 }
 
-export function GateContainer() {
+interface GateContainerProps {
+  activeSession?: ActiveSessionResumeData | null;
+}
+
+export function GateContainer({ activeSession }: GateContainerProps) {
   const verifiedData = useExamGateStore((state) => state.verifiedData);
   const resetGate = useExamGateStore((state) => state.resetGate);
+  const [showResumeCard, setShowResumeCard] = useState<boolean>(Boolean(activeSession));
 
   // Reset state gerbang ujian saat keluar dari halaman "/"
   useEffect(() => {
@@ -35,6 +42,11 @@ export function GateContainer() {
     <div className="flex w-full items-center justify-center p-4 sm:p-6 md:p-8">
       {verifiedData ? (
         <ExamLobbyCard verifiedData={verifiedData} />
+      ) : activeSession && showResumeCard ? (
+        <ActiveSessionResumeCard
+          session={activeSession}
+          onSwitchToCodeInput={() => setShowResumeCard(false)}
+        />
       ) : (
         <Suspense fallback={<GateCardSkeleton />}>
           <ReferralGateCard />

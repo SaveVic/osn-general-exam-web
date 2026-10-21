@@ -1,6 +1,8 @@
 "use server";
 
+import { cookies } from "next/headers";
 import { createServiceClient } from "@/lib/supabase/admin";
+import { hashSessionToken } from "@/lib/security/session-token";
 import { verifyGateCodeSchema } from "@/lib/validations/gate";
 import type { ExamRow, ReferralCodeRow } from "@/types/database";
 
@@ -19,6 +21,7 @@ export interface VerifiedGateData {
   referralCodeId: string;
   exam: VerifiedExamSummary;
   serverTime: string;
+  resumableSessionId?: string;
 }
 
 export interface VerifyGateResult {
@@ -98,15 +101,7 @@ export async function verifyReferralCodeAction(
       }
     }
 
-    // 3. Periksa ketersediaan kuota
-    if (referral.max_uses !== null && referral.current_uses >= referral.max_uses) {
-      return {
-        success: false,
-        message: "Batas kuota penggunaan untuk kode rujukan ini telah habis.",
-      };
-    }
-
-    // 4. Periksa naskah ujian terkait
+    // 3. Periksa naskah ujian terkait
     const exam = referral.exams;
     if (!exam) {
       return {
@@ -115,7 +110,49 @@ export async function verifyReferralCodeAction(
       };
     }
 
-    // 5. Periksa status publikasi naskah ujian
+    // 4. Periksa apakah pemanggil adalah pemilik sesi aktif untuk naskah ujian ini
+    let examToken: string | undefined;
+    try {
+      const cookieStore = await cookies();
+      examToken = cookieStore.get("exam_token")?.value;
+    } catch {
+      examToken = undefined;
+    }
+    let isCurrentSessionOwner = false;
+    let existingSessionId: string | undefined = undefined;
+
+    if (examToken) {
+      const tokenHash = hashSessionToken(examToken);
+      const { data: existingSession } = await supabase
+        .from("exam_sessions")
+        .select("id, is_completed, exam_id, started_at")
+        .eq("session_token_hash", tokenHash)
+        .eq("exam_id", exam.id)
+        .eq("is_completed", false)
+        .maybeSingle();
+
+      if (existingSession) {
+        const durationMs = exam.duration_minutes * 60 * 1000;
+        const examEndMs = new Date(exam.ends_at).getTime();
+        const startedMs = new Date(existingSession.started_at).getTime();
+        const sessionEndMs = Math.min(startedMs + durationMs, examEndMs);
+
+        if (now.getTime() < sessionEndMs) {
+          isCurrentSessionOwner = true;
+          existingSessionId = existingSession.id;
+        }
+      }
+    }
+
+    // 5. Periksa ketersediaan kuota (dikecualikan jika pemanggil sedang memulihkan sesi aktif miliknya)
+    if (!isCurrentSessionOwner && referral.max_uses !== null && referral.current_uses >= referral.max_uses) {
+      return {
+        success: false,
+        message: "Batas kuota penggunaan untuk kode rujukan ini telah habis.",
+      };
+    }
+
+    // 6. Periksa status publikasi naskah ujian
     if (!exam.is_published) {
       return {
         success: false,
@@ -123,7 +160,7 @@ export async function verifyReferralCodeAction(
       };
     }
 
-    // 6. Periksa apakah jadwal ujian telah selesai
+    // 7. Periksa apakah jadwal ujian telah selesai
     const examEnd = new Date(exam.ends_at);
     if (now > examEnd) {
       return {
@@ -132,7 +169,7 @@ export async function verifyReferralCodeAction(
       };
     }
 
-    // 7. Seluruh verifikasi lolos, kembalikan hanya data yang aman untuk peserta
+    // 8. Seluruh verifikasi lolos, kembalikan hanya data yang aman untuk peserta
     return {
       success: true,
       data: {
@@ -150,6 +187,7 @@ export async function verifyReferralCodeAction(
             : [],
         },
         serverTime: now.toISOString(),
+        resumableSessionId: existingSessionId,
       },
     };
   } catch (err) {

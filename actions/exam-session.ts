@@ -41,6 +41,84 @@ export interface StartExamSessionResult {
   };
 }
 
+export interface ActiveSessionResumeData {
+  sessionId: string;
+  examId: string;
+  examTitle: string;
+  studentName: string;
+  studentClass: string;
+  startedAt: string;
+  serverEndTime: string;
+  durationMinutes: number;
+}
+
+/**
+ * Server Action untuk mendeteksi apakah peramban saat ini memiliki cookie exam_token
+ * yang terikat pada sesi ujian aktif yang belum selesai dan belum kedaluwarsa.
+ */
+export async function getActiveSessionFromCookieAction(): Promise<ActiveSessionResumeData | null> {
+  try {
+    let examToken: string | undefined;
+    try {
+      const cookieStore = await cookies();
+      examToken = cookieStore.get("exam_token")?.value;
+    } catch {
+      // Dipanggil di luar lingkup request (misal unit test atau static build)
+      return null;
+    }
+
+    if (!examToken) {
+      return null;
+    }
+
+    const tokenHash = hashSessionToken(examToken);
+    const supabase = createServiceClient();
+
+    const { data, error } = await supabase
+      .from("exam_sessions")
+      .select("id, exam_id, student_name, student_class, started_at, is_completed, exams(*)")
+      .eq("session_token_hash", tokenHash)
+      .eq("is_completed", false)
+      .maybeSingle();
+
+    if (error || !data) {
+      return null;
+    }
+
+    const session = data as unknown as ExamSessionRow & { exams: ExamRow | null };
+    const exam = session.exams;
+
+    if (!exam || !exam.is_published) {
+      return null;
+    }
+
+    const nowMs = Date.now();
+    const startedMs = new Date(session.started_at).getTime();
+    const durationMs = exam.duration_minutes * 60 * 1000;
+    const examEndMs = new Date(exam.ends_at).getTime();
+    const sessionEndMs = Math.min(startedMs + durationMs, examEndMs);
+
+    // Jika waktu ujian atau durasi pengerjaan telah habis
+    if (nowMs >= sessionEndMs) {
+      return null;
+    }
+
+    return {
+      sessionId: session.id,
+      examId: exam.id,
+      examTitle: exam.title,
+      studentName: session.student_name,
+      studentClass: session.student_class,
+      startedAt: session.started_at,
+      serverEndTime: new Date(sessionEndMs).toISOString(),
+      durationMinutes: exam.duration_minutes,
+    };
+  } catch (err) {
+    console.error("Gagal mendeteksi sesi aktif dari cookie:", err);
+    return null;
+  }
+}
+
 type ReferralCodeWithExam = ReferralCodeRow & {
   exams: ExamRow | null;
 };
@@ -141,6 +219,51 @@ export async function startExamSessionAction(
     const sessionEndMs = Math.min(nowMs + durationMs, endMs);
     const serverEndTime = new Date(sessionEndMs).toISOString();
 
+    // 6.5. Periksa apakah peramban pemanggil telah memiliki sesi aktif untuk naskah ujian ini (idempotency guard)
+    const cookieStore = await cookies();
+    const existingExamToken = cookieStore.get("exam_token")?.value;
+    if (existingExamToken) {
+      const existingTokenHash = hashSessionToken(existingExamToken);
+      const { data: existingSessionData } = await supabase
+        .from("exam_sessions")
+        .select("id, exam_id, student_name, student_class, started_at, is_completed")
+        .eq("session_token_hash", existingTokenHash)
+        .eq("exam_id", exam.id)
+        .eq("is_completed", false)
+        .maybeSingle();
+
+      if (existingSessionData) {
+        const existingStartedMs = new Date(existingSessionData.started_at).getTime();
+        const existingSessionEndMs = Math.min(existingStartedMs + durationMs, endMs);
+        if (nowMs < existingSessionEndMs) {
+          // Pemanggil sudah memiliki sesi aktif yang valid, jangan buat baru atau menambah kuota
+          const { data: questionsData, error: questionsError } = await supabase
+            .from("questions")
+            .select("id, exam_id, order_index, question_type, prompt, options, points")
+            .eq("exam_id", exam.id)
+            .order("order_index", { ascending: true });
+
+          if (!questionsError && questionsData) {
+            return {
+              success: true,
+              data: {
+                sessionId: existingSessionData.id,
+                examId: exam.id,
+                examTitle: exam.title,
+                durationMinutes: exam.duration_minutes,
+                startedAt: existingSessionData.started_at,
+                serverEndTime: new Date(existingSessionEndMs).toISOString(),
+                serverTime: now.toISOString(),
+                studentName: existingSessionData.student_name,
+                studentClass: existingSessionData.student_class,
+                questions: questionsData as ClientQuestionItem[],
+              },
+            };
+          }
+        }
+      }
+    }
+
     // 7. Terbitkan token sesi acak aman & hitung hash untuk database
     const rawToken = generateSessionToken();
     const tokenHash = hashSessionToken(rawToken);
@@ -192,7 +315,6 @@ export async function startExamSessionAction(
     }
 
     // 11. Pasang HTTP-Only Cookie exam_token pada peramban siswa
-    const cookieStore = await cookies();
     const maxAgeSeconds = Math.max(
       3600,
       Math.ceil((sessionEndMs - nowMs) / 1000) + 1800

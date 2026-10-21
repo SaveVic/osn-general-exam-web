@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useRef } from "react";
-import { useSearchParams } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { useExamGateStore } from "@/lib/stores/exam-gate-store";
 import { verifyReferralCodeAction } from "@/actions/gate";
 import { Button } from "@/components/ui/button";
@@ -11,6 +11,7 @@ import { AlertCircle, ArrowRight, KeyRound, Loader2, ShieldCheck } from "lucide-
 import Link from "next/link";
 
 export function ReferralGateCard() {
+  const router = useRouter();
   const searchParams = useSearchParams();
   const hasAutoCheckedRef = useRef(false);
   const inputRef = useRef<HTMLInputElement>(null);
@@ -36,6 +37,10 @@ export function ReferralGateCard() {
     try {
       const res = await verifyReferralCodeAction(trimmed);
       if (res.success && res.data) {
+        if (res.data.resumableSessionId) {
+          router.push(`/ujian/${res.data.resumableSessionId}`);
+          return;
+        }
         setVerifiedData(res.data);
       } else {
         setError(res.message || "Kode rujukan tidak valid atau kuota pengerjaan telah habis.");
@@ -43,7 +48,7 @@ export function ReferralGateCard() {
     } catch {
       setError("Terjadi kesalahan koneksi saat memeriksa kode rujukan.");
     }
-  }, [setError, setVerifying, setVerifiedData]);
+  }, [router, setError, setVerifying, setVerifiedData]);
 
   // Reset state saat keluar dari ReferralGateCard menuju halaman lain (selama belum terverifikasi ke lobi)
   useEffect(() => {
