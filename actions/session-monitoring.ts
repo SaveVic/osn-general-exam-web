@@ -340,7 +340,6 @@ export async function forceSubmitSessionAction(
 
     revalidatePath(`/admin/ujian/${session.exam_id}/pemantauan`);
     revalidatePath(`/admin/ujian/${session.exam_id}/laporan`);
-    revalidatePath(`/admin/ujian/${session.exam_id}/penilaian`);
     revalidatePath("/admin/dasbor");
 
     return {
@@ -356,6 +355,91 @@ export async function forceSubmitSessionAction(
       success: false,
       message:
         "Terjadi kesalahan internal saat memproses pengumpulan paksa sesi peserta.",
+    };
+  }
+}
+
+export interface DeleteSessionResult {
+  success: boolean;
+  message?: string;
+}
+
+/**
+ * Server Action: Menghapus sesi peserta beserta seluruh data jawabannya secara permanen.
+ * Mengembalikan kuota terpakai pada kode rujukan (-1) jika ada.
+ */
+export async function deleteExamSessionAction(
+  sessionId: string
+): Promise<DeleteSessionResult> {
+  try {
+    const admin = await getAdminUser();
+    if (!admin) {
+      return {
+        success: false,
+        message: "Akses ditolak. Silakan masuk sebagai administrator.",
+      };
+    }
+
+    const supabase = createServiceClient();
+
+    // 1. Ambil data sesi untuk memeriksa exam_id dan referral_code_id
+    const { data: session, error: sessionError } = await supabase
+      .from("exam_sessions")
+      .select("id, exam_id, referral_code_id")
+      .eq("id", sessionId)
+      .single();
+
+    if (sessionError || !session) {
+      return {
+        success: false,
+        message: "Sesi ujian peserta tidak ditemukan.",
+      };
+    }
+
+    // 2. Hapus sesi (secara otomatis meng-cascade delete tabel session_answers)
+    const { error: deleteError } = await supabase
+      .from("exam_sessions")
+      .delete()
+      .eq("id", sessionId);
+
+    if (deleteError) {
+      console.error("Gagal menghapus sesi peserta:", deleteError.message);
+      return {
+        success: false,
+        message: "Gagal menghapus sesi peserta dari basis data.",
+      };
+    }
+
+    // 3. Kurangi kuota penggunaan pada kode rujukan terkait jika ada
+    if (session.referral_code_id) {
+      const { data: refCode } = await supabase
+        .from("referral_codes")
+        .select("id, current_uses")
+        .eq("id", session.referral_code_id)
+        .single();
+
+      if (refCode && refCode.current_uses > 0) {
+        await supabase
+          .from("referral_codes")
+          .update({ current_uses: Math.max(0, refCode.current_uses - 1) })
+          .eq("id", refCode.id);
+      }
+    }
+
+    revalidatePath(`/admin/ujian/${session.exam_id}/pemantauan`);
+    revalidatePath(`/admin/ujian/${session.exam_id}/laporan`);
+    revalidatePath("/admin/dasbor");
+
+    return {
+      success: true,
+      message:
+        "Sesi peserta beserta seluruh lembar jawabannya telah berhasil dihapus permanen.",
+    };
+  } catch (err) {
+    console.error("Kesalahan internal saat menghapus sesi peserta:", err);
+    return {
+      success: false,
+      message: "Terjadi kesalahan internal saat menghapus sesi peserta.",
     };
   }
 }

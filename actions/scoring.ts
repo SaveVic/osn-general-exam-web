@@ -193,7 +193,6 @@ function revalidateScoringPaths(examId: string) {
   revalidatePath(`/admin/ujian/${examId}/soal`);
   revalidatePath(`/admin/ujian/${examId}/pengaturan`);
   revalidatePath(`/admin/ujian/${examId}/laporan`);
-  revalidatePath(`/admin/ujian/${examId}/penilaian`);
   revalidatePath("/admin/dasbor");
 }
 

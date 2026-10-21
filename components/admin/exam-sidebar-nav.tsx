@@ -6,7 +6,6 @@ import {
   Activity,
   BarChart3,
   BookOpen,
-  FileEdit,
   KeyRound,
   Settings,
 } from "lucide-react";
@@ -36,11 +35,6 @@ export function ExamSidebarNav({ examId }: ExamSidebarNavProps) {
       title: "Kode Rujukan",
       href: `/admin/ujian/${examId}/kode-rujukan`,
       icon: KeyRound,
-    },
-    {
-      title: "Penilaian Manual",
-      href: `/admin/ujian/${examId}/penilaian`,
-      icon: FileEdit,
     },
     {
       title: "Laporan Nilai",

@@ -6,8 +6,11 @@ import {
   formatActualDuration,
   formatReportTimestamp,
   generateExamReportCsv,
+  generateExamFullAnswersCsv,
   type ExamReportSessionRow,
 } from "@/lib/exam/report-csv";
+import { getExamFullAnswersReportAction } from "@/actions/exam-report";
+import { SessionAnswersDetailDialog } from "@/components/admin/reports/session-answers-detail-dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
@@ -20,6 +23,9 @@ import {
   Clock,
   Award,
   FileSpreadsheet,
+  Eye,
+  Loader2,
+  TableProperties,
 } from "lucide-react";
 
 interface ExamReportViewProps {
@@ -37,6 +43,8 @@ export function ExamReportView({
 }: ExamReportViewProps) {
   const [selectedClass, setSelectedClass] = useState<string>("all");
   const [searchQuery, setSearchQuery] = useState<string>("");
+  const [selectedSessionDetailId, setSelectedSessionDetailId] = useState<string | null>(null);
+  const [isExportingFull, setIsExportingFull] = useState<boolean>(false);
 
   // Gabungkan daftar opsi kelas dari konfigurasi ujian dan sesi aktual
   const availableClasses = useMemo(() => {
@@ -124,6 +132,57 @@ export function ExamReportView({
     }
   };
 
+  // Handler unduh berkas CSV Jawaban Lengkap Seluruh Siswa
+  const handleExportFullAnswersCsv = async () => {
+    setIsExportingFull(true);
+    try {
+      const res = await getExamFullAnswersReportAction(exam.id);
+      if (res.success && res.rows && res.questionsCount !== undefined) {
+        // Filter baris sesuai filter aktif pada tabel
+        const targetRows = res.rows.filter((r) => {
+          return filteredSessions.some(
+            (s) => s.studentName === r.studentName && s.studentClass === r.studentClass
+          );
+        });
+
+        const csvContent = generateExamFullAnswersCsv(res.questionsCount, targetRows);
+        const safeSlug = exam.title
+          .toLowerCase()
+          .replace(/[^a-z0-9]+/g, "-")
+          .replace(/(^-|-$)/g, "");
+        const filename = `jawaban-lengkap-${safeSlug || exam.id}.csv`;
+
+        if (onExportCsv) {
+          onExportCsv(csvContent, filename);
+          return;
+        }
+
+        if (typeof window !== "undefined") {
+          const blob = new Blob([csvContent], {
+            type: "text/csv;charset=utf-8;",
+          });
+
+          if (typeof URL.createObjectURL === "function") {
+            const url = URL.createObjectURL(blob);
+            const link = document.createElement("a");
+            link.href = url;
+            link.setAttribute("download", filename);
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+            if (typeof URL.revokeObjectURL === "function") {
+              URL.revokeObjectURL(url);
+            }
+          }
+        }
+      }
+    } catch (err) {
+      console.error("Gagal mengekspor jawaban lengkap:", err);
+    } finally {
+      setIsExportingFull(false);
+    }
+  };
+
   return (
     <div className="space-y-6">
       {/* Kartu Metrik Statistik Akademis */}
@@ -204,16 +263,33 @@ export function ExamReportView({
           </div>
         </div>
 
-        {/* Tombol Ekspor Nilai (CSV) */}
-        <Button
-          type="button"
-          onClick={handleExportCsv}
-          disabled={filteredSessions.length === 0}
-          className="h-9 gap-2 bg-emerald-600 text-xs font-semibold text-white hover:bg-emerald-700 dark:bg-emerald-600 dark:hover:bg-emerald-700"
-        >
-          <Download className="size-3.5" />
-          <span>Ekspor Nilai (CSV)</span>
-        </Button>
+        {/* Tombol Ekspor Nilai (CSV) & Jawaban Lengkap */}
+        <div className="flex flex-wrap items-center gap-2">
+          <Button
+            type="button"
+            onClick={handleExportCsv}
+            disabled={filteredSessions.length === 0}
+            className="h-9 gap-1.5 bg-emerald-600 text-xs font-semibold text-white hover:bg-emerald-700 dark:bg-emerald-600 dark:hover:bg-emerald-700 cursor-pointer"
+          >
+            <Download className="size-3.5" />
+            <span>Ekspor Nilai (CSV)</span>
+          </Button>
+
+          <Button
+            type="button"
+            variant="outline"
+            onClick={handleExportFullAnswersCsv}
+            disabled={filteredSessions.length === 0 || isExportingFull}
+            className="h-9 gap-1.5 text-xs font-semibold text-indigo-700 border-indigo-200 hover:bg-indigo-50 dark:text-indigo-300 dark:border-indigo-800 dark:hover:bg-indigo-950/50 cursor-pointer"
+          >
+            {isExportingFull ? (
+              <Loader2 className="size-3.5 animate-spin" />
+            ) : (
+              <TableProperties className="size-3.5 text-indigo-600 dark:text-indigo-400" />
+            )}
+            <span>Ekspor Jawaban Lengkap (CSV)</span>
+          </Button>
+        </div>
       </div>
 
       {/* Tabel Ringkasan Siswa */}
@@ -245,6 +321,7 @@ export function ExamReportView({
                   <th className="px-4 py-3.5">Durasi Aktual</th>
                   <th className="px-4 py-3.5 text-right">Skor Total</th>
                   <th className="px-4 py-3.5 text-center">Status Pengerjaan</th>
+                  <th className="px-4 py-3.5 text-center">Aksi</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-100 dark:divide-slate-800/70">
@@ -296,6 +373,19 @@ export function ExamReportView({
                         </Badge>
                       )}
                     </td>
+                    <td className="px-4 py-3 text-center">
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="icon"
+                        onClick={() => setSelectedSessionDetailId(session.id)}
+                        className="size-8 text-slate-500 hover:text-indigo-600 hover:bg-indigo-50 dark:text-slate-400 dark:hover:text-indigo-400 dark:hover:bg-indigo-950/50 cursor-pointer"
+                        title="Lihat Detail Jawaban"
+                        aria-label="Lihat Detail Jawaban"
+                      >
+                        <Eye className="size-4" />
+                      </Button>
+                    </td>
                   </tr>
                 ))}
               </tbody>
@@ -303,6 +393,15 @@ export function ExamReportView({
           </div>
         )}
       </div>
+
+      {/* Modal Dialog Detail Lembar Jawaban Peserta */}
+      <SessionAnswersDetailDialog
+        sessionId={selectedSessionDetailId}
+        open={!!selectedSessionDetailId}
+        onOpenChange={(open) => {
+          if (!open) setSelectedSessionDetailId(null);
+        }}
+      />
     </div>
   );
 }

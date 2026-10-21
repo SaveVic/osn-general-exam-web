@@ -114,3 +114,173 @@ export function generateExamReportCsv(rows: ExamReportSessionRow[]): string {
   return `\uFEFF${csvBody}`;
 }
 
+export interface StudentFullAnswerRow {
+  studentName: string;
+  studentClass: string;
+  totalScore: number | null;
+  isCompleted: boolean;
+  answers: Record<number, string>; // orderIndex (1-indexed) -> formatted string
+}
+
+/**
+ * Format jawaban untuk tampilan tabel atau ekspor CSV
+ * Pilihan ganda: "A"
+ * Pilihan jamak: "A, B"
+ * Isian singkat: teks / angka
+ * Kosong: "-"
+ */
+export function formatAnswerForCsv(
+  questionType: string,
+  options: unknown,
+  answerValue: unknown,
+  includeLabel: boolean = false
+): string {
+  if (answerValue === null || answerValue === undefined || answerValue === "") {
+    return "-";
+  }
+
+  interface OptionItem {
+    id?: string;
+    label?: string;
+    [key: string]: unknown;
+  }
+
+  const optionList: OptionItem[] = Array.isArray(options) ? options : [];
+
+  if (questionType === "single_choice") {
+    const rawVal =
+      typeof answerValue === "object" &&
+      answerValue !== null &&
+      "selected" in answerValue
+        ? (answerValue as { selected: unknown }).selected
+        : answerValue;
+
+    if (!rawVal) return "-";
+    const selectedId = String(rawVal).trim();
+
+    const optIndex = optionList.findIndex(
+      (opt) => opt && typeof opt === "object" && String(opt.id) === selectedId
+    );
+
+    if (optIndex >= 0) {
+      const letter = String.fromCharCode(65 + optIndex);
+      const optLabel = optionList[optIndex]?.label;
+      if (includeLabel && optLabel) {
+        return `${letter}. ${optLabel}`;
+      }
+      return letter;
+    }
+
+    return selectedId || "-";
+  }
+
+  if (questionType === "multiple_choice") {
+    let selectedIds: string[] = [];
+    if (Array.isArray(answerValue)) {
+      selectedIds = answerValue.map(String);
+    } else if (
+      typeof answerValue === "object" &&
+      answerValue !== null &&
+      "selected" in answerValue &&
+      Array.isArray((answerValue as { selected: unknown }).selected)
+    ) {
+      selectedIds = (
+        (answerValue as { selected: unknown[] }).selected
+      ).map(String);
+    }
+
+    if (selectedIds.length === 0) return "-";
+
+    const formattedList: Array<{ letter: string; text: string; index: number }> =
+      [];
+
+    selectedIds.forEach((id) => {
+      const optIndex = optionList.findIndex(
+        (opt) => opt && typeof opt === "object" && String(opt.id) === id
+      );
+      if (optIndex >= 0) {
+        const letter = String.fromCharCode(65 + optIndex);
+        const optLabel = optionList[optIndex]?.label;
+        formattedList.push({
+          letter,
+          text: includeLabel && optLabel ? `${letter}. ${optLabel}` : letter,
+          index: optIndex,
+        });
+      } else {
+        formattedList.push({ letter: id, text: id, index: 999 });
+      }
+    });
+
+    formattedList.sort((a, b) => a.index - b.index);
+    return formattedList.map((item) => item.text).join(", ") || "-";
+  }
+
+  if (questionType === "short_answer") {
+    if (
+      typeof answerValue === "object" &&
+      answerValue !== null &&
+      "text" in answerValue
+    ) {
+      const txt = (answerValue as { text: unknown }).text;
+      return txt !== null && txt !== undefined
+        ? String(txt).trim() || "-"
+        : "-";
+    }
+    return String(answerValue).trim() || "-";
+  }
+
+  if (typeof answerValue === "string" || typeof answerValue === "number") {
+    return String(answerValue).trim() || "-";
+  }
+
+  return "-";
+}
+
+/**
+ * Menghasilkan konten berkas CSV untuk seluruh jawaban siswa (Jawaban Lengkap)
+ * Kolom: Nomor Urut, Nama Lengkap, Kelas, Skor Total, Status Pengerjaan, Soal 1, Soal 2, ..., Soal N
+ */
+export function generateExamFullAnswersCsv(
+  questionsCount: number,
+  rows: StudentFullAnswerRow[]
+): string {
+  const baseHeaders = [
+    "Nomor Urut",
+    "Nama Lengkap",
+    "Kelas",
+    "Skor Total",
+    "Status Pengerjaan",
+  ];
+
+  const questionHeaders: string[] = [];
+  for (let i = 1; i <= questionsCount; i++) {
+    questionHeaders.push(`Soal ${i}`);
+  }
+
+  const allHeaders = [...baseHeaders, ...questionHeaders];
+  const headerLine = allHeaders.map((h) => escapeCsvCell(h)).join(",");
+
+  const dataLines = rows.map((row, index) => {
+    const baseCells = [
+      index + 1,
+      row.studentName,
+      row.studentClass,
+      row.totalScore !== null && row.totalScore !== undefined
+        ? row.totalScore
+        : "-",
+      row.isCompleted ? "Selesai" : "Sedang Mengerjakan",
+    ];
+
+    const answerCells: string[] = [];
+    for (let i = 1; i <= questionsCount; i++) {
+      answerCells.push(row.answers[i] ?? "-");
+    }
+
+    const allCells = [...baseCells, ...answerCells];
+    return allCells.map((cell) => escapeCsvCell(cell)).join(",");
+  });
+
+  const csvBody = [headerLine, ...dataLines].join("\r\n");
+  return `\uFEFF${csvBody}`;
+}
+

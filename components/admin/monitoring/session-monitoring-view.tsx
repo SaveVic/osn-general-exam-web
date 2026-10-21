@@ -5,6 +5,7 @@ import type { ExamRow } from "@/types/database";
 import {
   getExamMonitoringData,
   forceSubmitSessionAction,
+  deleteExamSessionAction,
   type MonitoredSessionRow,
 } from "@/actions/session-monitoring";
 import {
@@ -34,7 +35,7 @@ import {
   ShieldAlert,
   Loader2,
   AlertCircle,
-  Lock,
+  Trash2,
 } from "lucide-react";
 
 interface SessionMonitoringViewProps {
@@ -75,6 +76,12 @@ export function SessionMonitoringView({
   const [targetForceSession, setTargetForceSession] =
     useState<MonitoredSessionRow | null>(null);
   const [isForceSubmitting, setIsForceSubmitting] = useState<boolean>(false);
+
+  // Dialog konfirmasi hapus sesi
+  const [targetDeleteSession, setTargetDeleteSession] =
+    useState<MonitoredSessionRow | null>(null);
+  const [isDeletingSession, setIsDeletingSession] = useState<boolean>(false);
+
   const [feedbackBanner, setFeedbackBanner] = useState<{
     type: "success" | "error";
     text: string;
@@ -235,6 +242,46 @@ export function SessionMonitoringView({
       });
     } finally {
       setIsForceSubmitting(false);
+    }
+  };
+
+  // Eksekusi aksi hapus sesi ujian peserta
+  const handleConfirmDeleteSession = async () => {
+    if (!targetDeleteSession || isDeletingSession) return;
+
+    setIsDeletingSession(true);
+    setFeedbackBanner(null);
+
+    try {
+      const result = await deleteExamSessionAction(targetDeleteSession.id);
+
+      if (!result.success) {
+        setFeedbackBanner({
+          type: "error",
+          text:
+            result.message ||
+            "Gagal menghapus sesi peserta. Silakan coba kembali.",
+        });
+        setIsDeletingSession(false);
+        return;
+      }
+
+      setSessions((prev) =>
+        prev.filter((item) => item.id !== targetDeleteSession.id)
+      );
+
+      setFeedbackBanner({
+        type: "success",
+        text: `Sesi peserta "${targetDeleteSession.studentName}" dan seluruh riwayat jawabannya berhasil dihapus.`,
+      });
+      setTargetDeleteSession(null);
+    } catch {
+      setFeedbackBanner({
+        type: "error",
+        text: "Terjadi gangguan jaringan saat menghapus sesi peserta.",
+      });
+    } finally {
+      setIsDeletingSession(false);
     }
   };
 
@@ -477,7 +524,7 @@ export function SessionMonitoringView({
                   <th className="px-4 py-3.5">Waktu Pengerjaan Terkini</th>
                   <th className="px-4 py-3.5">Sinkronisasi Terakhir</th>
                   <th className="px-4 py-3.5 text-center">Status Sesi</th>
-                  <th className="px-4 py-3.5 text-right">Aksi Darurat</th>
+                  <th className="px-4 py-3.5 text-center">Aksi</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-100 dark:divide-slate-800/70">
@@ -528,29 +575,38 @@ export function SessionMonitoringView({
                       </td>
                       <td className="px-4 py-3.5 text-center">
                         {session.isCompleted ? (
-                          <Badge variant="success">Telah Mengumpulkan</Badge>
+                          <Badge variant="success">Selesai</Badge>
                         ) : (
-                          <Badge variant="warning">Sedang Mengerjakan</Badge>
+                          <Badge variant="warning">Aktif</Badge>
                         )}
                       </td>
-                      <td className="px-4 py-3.5 text-right">
-                        {session.isCompleted ? (
-                          <span className="inline-flex items-center gap-1 text-xs font-medium text-slate-400 dark:text-slate-500">
-                            <Lock className="size-3.5" />
-                            Sesi Terkunci
-                          </span>
-                        ) : (
+                      <td className="px-4 py-3.5 text-center">
+                        <div className="flex items-center justify-center gap-1.5">
+                          {!session.isCompleted ? (
+                            <Button
+                              type="button"
+                              variant="outline"
+                              size="icon"
+                              onClick={() => setTargetForceSession(session)}
+                              title="Paksa Kumpulkan"
+                              aria-label={`Paksa Kumpulkan ${session.studentName}`}
+                              className="size-8 text-amber-600 hover:border-amber-300 hover:bg-amber-50 hover:text-amber-700 dark:border-amber-900/50 dark:text-amber-400 dark:hover:bg-amber-950/40"
+                            >
+                              <ShieldAlert className="size-4" />
+                            </Button>
+                          ) : null}
                           <Button
                             type="button"
-                            variant="destructive"
-                            size="sm"
-                            onClick={() => setTargetForceSession(session)}
-                            className="h-8 gap-1.5 text-xs"
+                            variant="outline"
+                            size="icon"
+                            onClick={() => setTargetDeleteSession(session)}
+                            title="Hapus Sesi Peserta"
+                            aria-label={`Hapus Sesi ${session.studentName}`}
+                            className="size-8 text-rose-600 hover:border-rose-300 hover:bg-rose-50 hover:text-rose-700 dark:border-rose-900/50 dark:text-rose-400 dark:hover:bg-rose-950/40"
                           >
-                            <ShieldAlert className="size-3.5" />
-                            <span>Paksa Kumpulkan</span>
+                            <Trash2 className="size-4" />
                           </Button>
-                        )}
+                        </div>
                       </td>
                     </tr>
                   );
@@ -613,6 +669,68 @@ export function SessionMonitoringView({
                 <>
                   <ShieldAlert className="size-4" />
                   <span>Ya, Paksa Kumpulkan</span>
+                </>
+              )}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Modal Dialog Konfirmasi Hapus Sesi Ujian */}
+      <Dialog
+        open={!!targetDeleteSession}
+        onOpenChange={(open) => {
+          if (!open && !isDeletingSession) {
+            setTargetDeleteSession(null);
+          }
+        }}
+      >
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2 text-rose-600 dark:text-rose-400">
+              <Trash2 className="size-5" />
+              <span>Hapus Sesi Ujian Peserta</span>
+            </DialogTitle>
+            <DialogDescription className="pt-2 leading-relaxed">
+              Apakah Anda yakin ingin menghapus seluruh sesi ujian dan riwayat jawaban untuk peserta{" "}
+              <strong className="text-slate-900 dark:text-slate-100">
+                {targetDeleteSession?.studentName}
+              </strong>{" "}
+              ({targetDeleteSession?.studentClass})?
+              <br />
+              <br />
+              <span className="font-medium text-rose-600 dark:text-rose-400">
+                Perhatian: Tindakan ini permanen dan tidak dapat dibatalkan.
+              </span>{" "}
+              Sesi aktif pada browser peserta akan segera diinvalidasi dan peserta akan dikeluarkan ke halaman utama. Kuota kode rujukan juga akan dipulihkan.
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter className="gap-2 sm:gap-0">
+            <DialogClose asChild>
+              <Button
+                type="button"
+                variant="outline"
+                disabled={isDeletingSession}
+              >
+                Batal
+              </Button>
+            </DialogClose>
+            <Button
+              type="button"
+              variant="destructive"
+              onClick={() => void handleConfirmDeleteSession()}
+              disabled={isDeletingSession}
+              className="gap-1.5"
+            >
+              {isDeletingSession ? (
+                <>
+                  <Loader2 className="size-4 animate-spin" />
+                  <span>Menghapus...</span>
+                </>
+              ) : (
+                <>
+                  <Trash2 className="size-4" />
+                  <span>Ya, Hapus Sesi</span>
                 </>
               )}
             </Button>

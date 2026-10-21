@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useRef } from "react";
 import { useExamSessionStore, type ExamSyncStatus } from "@/lib/stores/exam-session-store";
-import { syncBatchAnswersAction } from "@/actions/exam-session";
+import { syncBatchAnswersAction, checkSessionHeartbeatAction } from "@/actions/exam-session";
 
 export const SYNC_INTERVAL_MS = 30_000; // 30 detik sesuai spesifikasi F4-01
 
@@ -89,6 +89,9 @@ export function useExamSyncEngine(
         );
         return true;
       } else {
+        if (result.sessionInvalid) {
+          useExamSessionStore.getState().setSessionTerminated(result.message);
+        }
         useExamSessionStore.getState().setSyncStatus("error");
         return false;
       }
@@ -100,18 +103,30 @@ export function useExamSyncEngine(
     }
   }, [enabled, sessionId]);
 
-  // Pemicu 1: Interval otomatis setiap 30 detik
+  // Pemicu 1: Interval otomatis setiap 30 detik (Sinkronisasi perubahan atau Heartbeat keabsahan sesi)
   useEffect(() => {
     if (!enabled || isSubmitted) return;
 
-    const interval = setInterval(() => {
-      if (useExamSessionStore.getState().dirtyQuestionIds.length > 0) {
+    const interval = setInterval(async () => {
+      const state = useExamSessionStore.getState();
+      if (state.isTerminated) return;
+
+      if (state.dirtyQuestionIds.length > 0) {
         void flushSync();
+      } else {
+        try {
+          const hb = await checkSessionHeartbeatAction(sessionId);
+          if (!hb.valid && hb.sessionInvalid) {
+            useExamSessionStore.getState().setSessionTerminated(hb.message);
+          }
+        } catch {
+          // Abaikan kegagalan jaringan sementara pada detak heartbeat
+        }
       }
     }, SYNC_INTERVAL_MS);
 
     return () => clearInterval(interval);
-  }, [enabled, isSubmitted, flushSync]);
+  }, [enabled, isSubmitted, flushSync, sessionId]);
 
   // Pemicu 2: Perpindahan nomor soal (navigation trigger)
   useEffect(() => {

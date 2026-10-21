@@ -23,6 +23,8 @@ export interface ExamSessionState {
   syncStatus: ExamSyncStatus;
   lastSyncedAt: string | null;
   isSubmitted: boolean;
+  isTerminated: boolean;
+  terminationMessage: string | null;
 }
 
 export interface ExamSessionActions {
@@ -48,6 +50,7 @@ export interface ExamSessionActions {
   setSyncStatus: (status: ExamSyncStatus) => void;
   markQuestionsSynced: (questionIds: string[], syncedAt: string) => void;
   setSubmitted: (isSubmitted: boolean) => void;
+  setSessionTerminated: (message?: string) => void;
   clearSession: () => void;
 }
 
@@ -77,6 +80,8 @@ export const useExamSessionStore = create<ExamSessionStore>()(
       syncStatus: "synced",
       lastSyncedAt: null,
       isSubmitted: false,
+      isTerminated: false,
+      terminationMessage: null,
 
       initSession: (data) => {
         const offset = data.serverTime
@@ -101,6 +106,8 @@ export const useExamSessionStore = create<ExamSessionStore>()(
           syncStatus: "synced",
           lastSyncedAt: null,
           isSubmitted: false,
+          isTerminated: false,
+          terminationMessage: null,
         });
       },
 
@@ -147,6 +154,8 @@ export const useExamSessionStore = create<ExamSessionStore>()(
             serverEndTime: data.serverEndTime,
             serverTimeOffsetMs,
             lastSyncedAt: data.lastSyncedAt || state.lastSyncedAt,
+            isTerminated: false,
+            terminationMessage: null,
           });
 
           return "local_merged";
@@ -171,6 +180,8 @@ export const useExamSessionStore = create<ExamSessionStore>()(
           syncStatus: "synced",
           lastSyncedAt: data.lastSyncedAt,
           isSubmitted: false,
+          isTerminated: false,
+          terminationMessage: null,
         });
 
         return "remote_restored";
@@ -244,6 +255,14 @@ export const useExamSessionStore = create<ExamSessionStore>()(
 
       setSubmitted: (isSubmitted) => set({ isSubmitted }),
 
+      setSessionTerminated: (message) =>
+        set({
+          isTerminated: true,
+          terminationMessage:
+            message ||
+            "Sesi ujian Anda telah dihapus atau dibatalkan oleh pengawas ujian.",
+        }),
+
       clearSession: () =>
         set({
           sessionId: null,
@@ -263,6 +282,8 @@ export const useExamSessionStore = create<ExamSessionStore>()(
           syncStatus: "synced",
           lastSyncedAt: null,
           isSubmitted: false,
+          isTerminated: false,
+          terminationMessage: null,
         }),
     }),
     {

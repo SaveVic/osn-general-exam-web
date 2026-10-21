@@ -15,22 +15,23 @@ describe("ExamSidebarNav Component", () => {
     mockUsePathname.mockReturnValue("/admin/ujian/exam-123/pengaturan");
   });
 
-  it("merender seluruh 6 menu navigasi ujian dengan tautan href yang benar", () => {
+  it("merender seluruh 5 menu navigasi ujian dengan tautan href yang benar dan tanpa penilaian manual", () => {
     render(<ExamSidebarNav examId="exam-123" />);
 
     const pengaturanLink = screen.getByRole("link", { name: /Pengaturan Naskah/i });
     const bankSoalLink = screen.getByRole("link", { name: /Bank Soal/i });
     const kodeRujukanLink = screen.getByRole("link", { name: /Kode Rujukan/i });
-    const penilaianLink = screen.getByRole("link", { name: /Penilaian Manual/i });
     const laporanLink = screen.getByRole("link", { name: /Laporan Nilai/i });
     const pemantauanLink = screen.getByRole("link", { name: /Pemantauan Sesi/i });
 
     expect(pengaturanLink).toHaveAttribute("href", "/admin/ujian/exam-123/pengaturan");
     expect(bankSoalLink).toHaveAttribute("href", "/admin/ujian/exam-123/soal");
     expect(kodeRujukanLink).toHaveAttribute("href", "/admin/ujian/exam-123/kode-rujukan");
-    expect(penilaianLink).toHaveAttribute("href", "/admin/ujian/exam-123/penilaian");
     expect(laporanLink).toHaveAttribute("href", "/admin/ujian/exam-123/laporan");
     expect(pemantauanLink).toHaveAttribute("href", "/admin/ujian/exam-123/pemantauan");
+
+    // Pastikan menu Penilaian Manual sudah tidak ada
+    expect(screen.queryByRole("link", { name: /Penilaian Manual/i })).not.toBeInTheDocument();
   });
 
   it("memberikan penanda highlight (aria-current='page' & active style) pada menu yang sedang aktif", () => {

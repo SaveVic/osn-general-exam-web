@@ -17,6 +17,7 @@ import { QuestionCard } from "./question-card";
 import { BottomNavigationBar } from "./bottom-navigation-bar";
 import { FinishExamDialog } from "./finish-exam-dialog";
 import { TimeExpiredDialog } from "./time-expired-dialog";
+import { SessionTerminatedDialog } from "./session-terminated-dialog";
 import { QuestionPaletteSidebar } from "./palette/question-palette-sidebar";
 import { QuestionPaletteSheet } from "./palette/question-palette-sheet";
 import { isQuestionAnswered } from "./palette/question-palette-grid";
@@ -52,6 +53,8 @@ export function ExamRoomShell({ sessionId, initialRecoveryData }: ExamRoomShellP
   const answersMap = useExamSessionStore((state) => state.answersMap);
   const flaggedMap = useExamSessionStore((state) => state.flaggedMap);
   const isSubmitted = useExamSessionStore((state) => state.isSubmitted);
+  const isTerminated = useExamSessionStore((state) => state.isTerminated);
+  const terminationMessage = useExamSessionStore((state) => state.terminationMessage);
 
   const prevQuestion = useExamSessionStore((state) => state.prevQuestion);
   const nextQuestion = useExamSessionStore((state) => state.nextQuestion);
@@ -84,6 +87,8 @@ export function ExamRoomShell({ sessionId, initialRecoveryData }: ExamRoomShellP
           const res = await recoverExamSessionAction(sessionId);
           if (res.success && res.data) {
             recoverSession(res.data);
+          } else if (res.sessionInvalid) {
+            useExamSessionStore.getState().setSessionTerminated(res.message);
           }
         } catch (err) {
           console.error("Gagal memulihkan sesi ujian:", err);
@@ -148,6 +153,9 @@ export function ExamRoomShell({ sessionId, initialRecoveryData }: ExamRoomShellP
         }
         router.replace("/ujian/selesai");
       } else {
+        if (res.sessionInvalid) {
+          useExamSessionStore.getState().setSessionTerminated(res.message);
+        }
         setAutoSubmitError(res.message || "Gagal mengumpulkan lembar jawaban secara otomatis.");
       }
     } catch {
@@ -188,6 +196,9 @@ export function ExamRoomShell({ sessionId, initialRecoveryData }: ExamRoomShellP
         setIsFinishDialogOpen(false);
         router.replace("/ujian/selesai");
       } else {
+        if (res.sessionInvalid) {
+          useExamSessionStore.getState().setSessionTerminated(res.message);
+        }
         setManualSubmitError(res.message || "Gagal mengumpulkan lembar jawaban.");
       }
     } catch {
@@ -200,6 +211,8 @@ export function ExamRoomShell({ sessionId, initialRecoveryData }: ExamRoomShellP
   // Handler navigasi keyboard (ArrowLeft / ArrowRight)
   const handleKeyDown = useCallback(
     (e: KeyboardEvent) => {
+      if (isTerminated) return;
+
       // Abaikan jika fokus sedang berada pada input atau textarea
       const target = e.target as HTMLElement | null;
       if (
@@ -219,7 +232,7 @@ export function ExamRoomShell({ sessionId, initialRecoveryData }: ExamRoomShellP
         nextQuestion();
       }
     },
-    [prevQuestion, nextQuestion]
+    [isTerminated, prevQuestion, nextQuestion]
   );
 
   useEffect(() => {
@@ -466,6 +479,12 @@ export function ExamRoomShell({ sessionId, initialRecoveryData }: ExamRoomShellP
         isSubmitting={isAutoSubmitting}
         errorMessage={autoSubmitError}
         onRetry={handleAutoSubmit}
+      />
+
+      {/* Dialog Peringatan Sesi Dihapus / Diinvalidasi oleh Pengawas */}
+      <SessionTerminatedDialog
+        open={isTerminated}
+        message={terminationMessage}
       />
     </div>
   );
