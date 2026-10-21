@@ -6,9 +6,30 @@ import remarkMath from "remark-math";
 import remarkGfm from "remark-gfm";
 import rehypeKatex from "rehype-katex";
 import rehypeHighlight from "rehype-highlight";
+import rehypeSanitize, { defaultSchema } from "rehype-sanitize";
 import { ImageLightbox } from "./image-lightbox";
 import { cn } from "@/lib/utils";
 import "highlight.js/styles/github-dark.css";
+
+// Skema sanitasi yang mengizinkan kelas KaTeX, GFM, dan highlight.js secara aman
+const sanitizeSchema = {
+  ...defaultSchema,
+  attributes: {
+    ...defaultSchema.attributes,
+    div: [
+      ...(defaultSchema.attributes?.div || []),
+      ["className", "math", "math-display"],
+    ],
+    span: [
+      ...(defaultSchema.attributes?.span || []),
+      ["className", "math", "math-inline"],
+    ],
+    code: [
+      ...(defaultSchema.attributes?.code || []),
+      [/^language-./, "hljs"],
+    ],
+  },
+};
 
 interface MarkdownRendererProps {
   content: string;
@@ -51,6 +72,7 @@ export function MarkdownRenderer({
       <ReactMarkdown
         remarkPlugins={[remarkMath, remarkGfm]}
         rehypePlugins={[
+          [rehypeSanitize, sanitizeSchema],
           [rehypeKatex, { throwOnError: false, errorColor: "#ef4444" }],
           rehypeHighlight,
         ]}

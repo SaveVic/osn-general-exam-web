@@ -25,7 +25,6 @@ const ALLOWED_MIME_TYPES = [
   "image/jpeg",
   "image/jpg",
   "image/webp",
-  "image/svg+xml",
 ];
 
 const MAX_FILE_SIZE_BYTES = 2 * 1024 * 1024; // 2 MB
@@ -75,7 +74,7 @@ export async function uploadExamAssetAction(
   if (!ALLOWED_MIME_TYPES.includes(file.type)) {
     return {
       success: false,
-      message: "Format berkas tidak didukung. Harap pilih gambar bertipe PNG, JPG, JPEG, WebP, atau SVG.",
+      message: "Format berkas tidak didukung. Harap pilih gambar bertipe PNG, JPG, JPEG, atau WebP.",
     };
   }
 

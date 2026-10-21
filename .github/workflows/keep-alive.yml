@@ -1,0 +1,26 @@
+name: Supabase Database Keep-Alive
+
+on:
+  schedule:
+    # Berjalan setiap 3 hari sekali pada pukul 00:00 UTC (jauh di bawah batas auto-pause 7 hari Supabase)
+    - cron: '0 0 */3 * *'
+  workflow_dispatch: # Memungkinkan eksekusi manual kapan saja dari tab GitHub Actions
+
+jobs:
+  ping-healthcheck:
+    name: Ping Healthcheck & Keep Database Active
+    runs-on: ubuntu-latest
+    steps:
+      - name: Ping Application Health Endpoint
+        env:
+          APP_URL: ${{ secrets.PRODUCTION_APP_URL || 'https://osn-general-exam-web.vercel.app' }}
+        run: |
+          echo "Memulai keep-alive ping ke endpoint: $APP_URL/api/health"
+          HTTP_STATUS=$(curl -s -o /dev/null -w "%{http_code}" -m 15 "$APP_URL/api/health" || echo "000")
+          echo "Kode Status HTTP yang diterima: $HTTP_STATUS"
+          if [ "$HTTP_STATUS" -ne 200 ]; then
+            echo "❌ Galat: Healthcheck mengembalikan status $HTTP_STATUS (bukan 200 OK)."
+            exit 1
+          fi
+          echo "✅ Basis data Supabase berhasil dipertahankan aktif (keep-alive sukses)."
+

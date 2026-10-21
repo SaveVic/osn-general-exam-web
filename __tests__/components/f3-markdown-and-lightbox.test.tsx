@@ -36,6 +36,32 @@ $$
     expect(screen.getByText("Masukan")).toBeInTheDocument();
   });
 
+  it("menyanitasi tag HTML berbahaya (Stored XSS) seperti script dan event handler", () => {
+    const maliciousMarkdown = `
+Halo peserta! <script>window.hacked = true;</script>
+<iframe src="https://evil.com"></iframe>
+
+[Tautan Jahat](javascript:alert('xss'))
+
+Teks biasa tetap aman.
+`;
+
+    const { container } = render(<MarkdownRenderer content={maliciousMarkdown} />);
+
+    // Script dan iframe harus dibuang oleh sanitasi
+    expect(container.querySelector("script")).toBeNull();
+    expect(container.querySelector("iframe")).toBeNull();
+
+    // Link dengan protokol javascript: href-nya wajib dibersihkan/dihapus oleh rehype-sanitize
+    const linkElement = container.querySelector("a");
+    if (linkElement) {
+      expect(linkElement.getAttribute("href")).toBeNull();
+    }
+
+    // Teks aman tetap dapat dibaca
+    expect(screen.getByText(/Teks biasa tetap aman/i)).toBeInTheDocument();
+  });
+
   it("membungkus sintaks gambar Markdown ![alt](url) secara otomatis dengan ImageLightbox", () => {
     const mdWithImage =
       "Perhatikan grafik berikut:\n\n![Grafik Kecepatan terhadap Waktu](https://example.com/grafik-vt.png)";

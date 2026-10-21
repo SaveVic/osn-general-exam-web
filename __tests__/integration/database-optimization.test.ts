@@ -7,6 +7,22 @@ import {
   recalculateExamScoresAction,
 } from "@/actions/scoring";
 import { getExamMonitoringData } from "@/actions/session-monitoring";
+import {
+  submitExamSessionAction,
+  verifyActiveSessionAction,
+  startExamSessionAction,
+} from "@/actions/exam-session";
+import { hashSessionToken } from "@/lib/security/session-token";
+
+// Mock next/headers
+const mockCookieGet = vi.fn();
+const mockCookieSet = vi.fn();
+vi.mock("next/headers", () => ({
+  cookies: vi.fn(async () => ({
+    get: mockCookieGet,
+    set: mockCookieSet,
+  })),
+}));
 
 // Mock Supabase middleware
 vi.mock("@/lib/supabase/middleware", () => ({
@@ -37,6 +53,7 @@ vi.mock("@/lib/supabase/admin", () => ({
 describe("Database Query & API Call Optimization Tests", () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    mockCookieGet.mockReturnValue(undefined);
   });
 
   describe("1. Middleware Auth Bypass Optimization", () => {
@@ -302,6 +319,250 @@ describe("Database Query & API Call Optimization Tests", () => {
       expect(viewQueried).toBe(true);
       expect(rawAnswersQueried).toBe(false);
       expect(res.sessions?.[0].answeredCount).toBe(5);
+    });
+  });
+
+  describe("5. Strategi 4: Single-Pass Submit & Score Mutation (submitExamSessionAction)", () => {
+    it("mengevaluasi skor dan mengumpulkan ujian dalam satu pass mutasi tanpa roundtrip ganda", async () => {
+      const rawToken = "raw-opt-token-123";
+      const tokenHash = hashSessionToken(rawToken);
+      mockCookieGet.mockReturnValue({ value: rawToken });
+
+      const mockSession = {
+        id: "sess-opt-subm",
+        exam_id: "exam-opt-subm",
+        session_token_hash: tokenHash,
+        started_at: new Date(Date.now() - 10 * 60 * 1000).toISOString(),
+        is_completed: false,
+        exams: {
+          id: "exam-opt-subm",
+          title: "Simulasi Single-Pass",
+          duration_minutes: 60,
+          ends_at: new Date(Date.now() + 50 * 60 * 1000).toISOString(),
+        },
+      };
+
+      const mockQuestions = [
+        {
+          id: "q-single-1",
+          question_type: "single_choice",
+          points: 50,
+          correct_answer: { selected: "B" },
+        },
+      ];
+
+      let sessionUpdatedWithScore = false;
+      let sessionUpdatedWithCompleted = false;
+      let answersUpsertedWithAwardedScore = false;
+      let sessionUpdateCallCount = 0;
+
+      mockServiceFrom.mockImplementation((table: string) => {
+        if (table === "exam_sessions") {
+          return {
+            select: vi.fn(() => ({
+              eq: vi.fn(() => ({
+                maybeSingle: vi.fn(async () => ({ data: mockSession, error: null })),
+              })),
+            })),
+            update: vi.fn((payload) => {
+              sessionUpdateCallCount++;
+              if (payload.is_completed === true) {
+                sessionUpdatedWithCompleted = true;
+              }
+              if (payload.total_score === 50) {
+                sessionUpdatedWithScore = true;
+              }
+              return {
+                eq: vi.fn(async () => ({ error: null })),
+              };
+            }),
+          };
+        }
+        if (table === "questions") {
+          return {
+            select: vi.fn(() => ({
+              eq: vi.fn(async () => ({ data: mockQuestions, error: null })),
+            })),
+          };
+        }
+        if (table === "session_answers") {
+          return {
+            select: vi.fn(() => ({
+              eq: vi.fn(async () => ({ data: [], error: null })),
+            })),
+            upsert: vi.fn(async (rows: Array<{ awarded_score?: number }>) => {
+              if (rows.length > 0 && rows[0].awarded_score === 50) {
+                answersUpsertedWithAwardedScore = true;
+              }
+              return { error: null };
+            }),
+          };
+        }
+        return {};
+      });
+
+      const res = await submitExamSessionAction({
+        sessionId: "sess-opt-subm",
+        finalAnswers: [
+          { questionId: "q-single-1", answerValue: { selected: "B" }, isFlagged: false },
+        ],
+      });
+
+      expect(res.success).toBe(true);
+      // Single-Pass Mutation: Skor dan status selesai disimpan dalam 1 kali update ke exam_sessions
+      expect(sessionUpdateCallCount).toBe(1);
+      expect(sessionUpdatedWithCompleted).toBe(true);
+      expect(sessionUpdatedWithScore).toBe(true);
+      // Jawaban di-upsert langsung dengan awarded_score terhitung
+      expect(answersUpsertedWithAwardedScore).toBe(true);
+    });
+  });
+
+  describe("6. Strategi 5: Minimal Column Projection (verifyActiveSessionAction)", () => {
+    it("memproyeksikan kolom seminimal mungkin tanpa wildcard select * dan exams(*)", async () => {
+      const rawToken = "raw-tok-verify-opt";
+      const tokenHash = hashSessionToken(rawToken);
+      mockCookieGet.mockReturnValue({ value: rawToken });
+
+      let capturedSelectString = "";
+
+      mockServiceFrom.mockImplementation((table: string) => {
+        if (table === "exam_sessions") {
+          return {
+            select: vi.fn((cols: string) => {
+              capturedSelectString = cols;
+              return {
+                eq: vi.fn(() => ({
+                  maybeSingle: vi.fn(async () => ({
+                    data: {
+                      id: "sess-min-proj",
+                      exam_id: "ex-1",
+                      student_name: "Budi",
+                      student_class: "12-IPA",
+                      session_token_hash: tokenHash,
+                      is_completed: false,
+                      started_at: new Date().toISOString(),
+                      submitted_at: null,
+                      exams: {
+                        id: "ex-1",
+                        title: "Fisika Modern",
+                        duration_minutes: 90,
+                        ends_at: new Date(Date.now() + 3600000).toISOString(),
+                      },
+                    },
+                    error: null,
+                  })),
+                })),
+              };
+            }),
+          };
+        }
+        return {};
+      });
+
+      const res = await verifyActiveSessionAction("sess-min-proj");
+      expect(res.valid).toBe(true);
+      // Verifikasi proyeksi kolom tidak menggunakan wildcard
+      expect(capturedSelectString).not.toContain("*, exams(*)");
+      expect(capturedSelectString).toBe(
+        "id, exam_id, student_name, student_class, session_token_hash, is_completed, started_at, submitted_at, exams(id, title, duration_minutes, ends_at)"
+      );
+    });
+  });
+
+  describe("7. Skenario 2: Optimistic Concurrency Control (startExamSessionAction)", () => {
+    it("menerapkan pengecekan kuota kondisional OCC saat menambah current_uses", async () => {
+      mockCookieGet.mockReturnValue(undefined);
+      const now = Date.now();
+      const endsAt = new Date(now + 3600_000).toISOString();
+
+      let occConditionChecked = false;
+
+      mockServiceFrom.mockImplementation((table: string) => {
+        if (table === "referral_codes") {
+          return {
+            select: vi.fn(() => ({
+              eq: vi.fn(() => ({
+                maybeSingle: vi.fn(async () => ({
+                  data: {
+                    id: "ref-occ-1",
+                    code: "OSN-OCC",
+                    is_active: true,
+                    expires_at: endsAt,
+                    max_uses: 10,
+                    current_uses: 3,
+                    exams: {
+                      id: "ex-occ-1",
+                      title: "Ujian Concurrency",
+                      duration_minutes: 60,
+                      starts_at: new Date(now - 60000).toISOString(),
+                      ends_at: endsAt,
+                      is_published: true,
+                    },
+                  },
+                  error: null,
+                })),
+              })),
+            })),
+            update: vi.fn(() => ({
+              eq: vi.fn((col1: string) => {
+                if (col1 === "id") {
+                  return {
+                    eq: vi.fn((col2: string, val2: unknown) => {
+                      if (col2 === "current_uses" && val2 === 3) {
+                        occConditionChecked = true;
+                      }
+                      return {
+                        select: vi.fn(async () => ({
+                          data: [{ id: "ref-occ-1", current_uses: 4, max_uses: 10 }],
+                          error: null,
+                        })),
+                      };
+                    }),
+                  };
+                }
+                return {};
+              }),
+            })),
+          };
+        }
+        if (table === "exam_sessions") {
+          return {
+            insert: vi.fn(() => ({
+              select: vi.fn(() => ({
+                single: vi.fn(async () => ({
+                  data: {
+                    id: "sess-occ-created",
+                    started_at: new Date().toISOString(),
+                    student_name: "Citra",
+                    student_class: "11-B",
+                  },
+                  error: null,
+                })),
+              })),
+            })),
+          };
+        }
+        if (table === "questions") {
+          return {
+            select: vi.fn(() => ({
+              eq: vi.fn(() => ({
+                order: vi.fn(async () => ({ data: [], error: null })),
+              })),
+            })),
+          };
+        }
+        return {};
+      });
+
+      const res = await startExamSessionAction({
+        referralCode: "OSN-OCC",
+        studentName: "Citra Lestari",
+        studentClass: "11-B",
+      });
+
+      expect(res.success).toBe(true);
+      expect(occConditionChecked).toBe(true);
     });
   });
 });

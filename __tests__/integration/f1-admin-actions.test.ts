@@ -234,6 +234,17 @@ describe("F1-04 & F1-05: Integrasi Unggah Diagram Storage & Kode Rujukan (action
     expect(resMime.success).toBe(false);
     expect(resMime.message).toContain("Format berkas tidak didukung");
 
+    // Uji penolakan berkas SVG (keamanan XML / XSS)
+    const svgFile = new File(["<svg></svg>"], "vektor.svg", {
+      type: "image/svg+xml",
+    });
+    const fdSvg = new FormData();
+    fdSvg.set("file", svgFile);
+
+    const resSvg = await uploadExamAssetAction("exam-1", fdSvg);
+    expect(resSvg.success).toBe(false);
+    expect(resSvg.message).toContain("Format berkas tidak didukung");
+
     // Uji ukuran > 2 MB (2.5 MB)
     const bigBuffer = new Uint8Array(Math.floor(2.5 * 1024 * 1024));
     const bigFile = new File([bigBuffer], "diagram-besar.png", {
