@@ -2,7 +2,17 @@ import { getAdminUser } from "@/actions/auth";
 import { getExamReportData } from "@/actions/exam-report";
 import { ExamReportView } from "@/components/admin/reports/exam-report-view";
 import { BarChart3 } from "lucide-react";
+import type { Metadata } from "next";
 import { notFound, redirect } from "next/navigation";
+
+export const metadata: Metadata = {
+  title: "Laporan Nilai",
+  description: "Rekapitulasi nilai dan ekspor hasil ujian format CSV UTF-8 BOM di ExamLab.",
+  robots: {
+    index: false,
+    follow: false,
+  },
+};
 
 interface ExamReportPageProps {
   params: Promise<{

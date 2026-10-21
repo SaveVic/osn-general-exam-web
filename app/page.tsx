@@ -6,6 +6,7 @@ import { GateContainer } from "@/components/gate/gate-container";
 
 export const metadata: Metadata = {
   title: "Portal Ujian",
+  description: "Masukkan kode rujukan resmi untuk mengakses sesi pengerjaan ujian Anda di ExamLab.",
 };
 
 export default async function HomePage() {

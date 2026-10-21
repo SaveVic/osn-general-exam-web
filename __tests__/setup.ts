@@ -64,3 +64,16 @@ vi.mock("next/navigation", () => ({
   redirect: vi.fn(),
 }));
 
+// Mock next/font/google
+vi.mock("next/font/google", () => ({
+  Inter: () => ({
+    variable: "--font-sans",
+    className: "font-sans",
+  }),
+  JetBrains_Mono: () => ({
+    variable: "--font-mono",
+    className: "font-mono",
+  }),
+}));
+
+

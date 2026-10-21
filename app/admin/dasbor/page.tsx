@@ -12,6 +12,11 @@ import { redirect } from "next/navigation";
 
 export const metadata: Metadata = {
   title: "Dashboard",
+  description: "Dasbor manajemen naskah ujian, statistik sesi, dan status publikasi di ExamLab.",
+  robots: {
+    index: false,
+    follow: false,
+  },
 };
 
 export default async function AdminDashboardPage() {

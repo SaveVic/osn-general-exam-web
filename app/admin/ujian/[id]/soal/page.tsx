@@ -2,7 +2,17 @@ import { getAdminUser } from "@/actions/auth";
 import { getExamById } from "@/actions/exams";
 import { getExamQuestions } from "@/actions/questions";
 import { QuestionBankManager } from "@/components/admin/questions/question-bank-manager";
+import type { Metadata } from "next";
 import { notFound, redirect } from "next/navigation";
+
+export const metadata: Metadata = {
+  title: "Bank Soal",
+  description: "Pengelolaan butir soal, stimulus markdown, dan formula KaTeX di ExamLab.",
+  robots: {
+    index: false,
+    follow: false,
+  },
+};
 
 interface ExamQuestionsPageProps {
   params: Promise<{

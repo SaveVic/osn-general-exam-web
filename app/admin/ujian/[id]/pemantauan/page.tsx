@@ -2,7 +2,17 @@ import { getAdminUser } from "@/actions/auth";
 import { getExamMonitoringData } from "@/actions/session-monitoring";
 import { SessionMonitoringView } from "@/components/admin/monitoring/session-monitoring-view";
 import { Activity } from "lucide-react";
+import type { Metadata } from "next";
 import { notFound, redirect } from "next/navigation";
+
+export const metadata: Metadata = {
+  title: "Pemantauan Sesi",
+  description: "Pemantauan progres dan sinkronisasi sesi peserta secara real-time di ExamLab.",
+  robots: {
+    index: false,
+    follow: false,
+  },
+};
 
 interface ExamMonitoringPageProps {
   params: Promise<{

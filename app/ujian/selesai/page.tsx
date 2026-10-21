@@ -5,10 +5,15 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { getExamCompletionSummaryAction } from "@/actions/exam-session";
 import { CheckCircle2, Home, ShieldCheck, XCircle, Award } from "lucide-react";
+import type { Metadata } from "next";
 
-export const metadata = {
-  title: "Ujian Selesai - Portal Ujian Teknis",
-  description: "Konfirmasi penyerahan dan penyelesaian sesi pengerjaan ujian daring resmi.",
+export const metadata: Metadata = {
+  title: "Ujian Selesai",
+  description: "Konfirmasi penyerahan dan penyelesaian sesi pengerjaan ujian daring resmi ExamLab.",
+  robots: {
+    index: false,
+    follow: false,
+  },
 };
 
 interface ExamFinishedPageProps {

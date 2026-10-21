@@ -8,6 +8,11 @@ import Link from "next/link";
 
 export const metadata: Metadata = {
   title: "Portal Admin",
+  description: "Portal masuk otentikasi pengawas dan administrator ExamLab.",
+  robots: {
+    index: false,
+    follow: false,
+  },
 };
 
 interface LoginPageProps {

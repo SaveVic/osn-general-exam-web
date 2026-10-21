@@ -3,8 +3,18 @@ import { AdminHeader } from "@/components/admin/admin-header";
 import { ExamForm } from "@/components/admin/exam-form";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { ArrowLeft, BookPlus } from "lucide-react";
+import type { Metadata } from "next";
 import Link from "next/link";
 import { redirect } from "next/navigation";
+
+export const metadata: Metadata = {
+  title: "Buat Naskah Baru",
+  description: "Penyusunan paket naskah ujian baru di ExamLab.",
+  robots: {
+    index: false,
+    follow: false,
+  },
+};
 
 export default async function NewExamPage() {
   const user = await getAdminUser();

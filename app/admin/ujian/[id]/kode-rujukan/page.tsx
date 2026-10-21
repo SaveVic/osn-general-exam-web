@@ -2,7 +2,17 @@ import { getAdminUser } from "@/actions/auth";
 import { getExamById } from "@/actions/exams";
 import { getExamReferralCodes } from "@/actions/referral-codes";
 import { ReferralCodeManager } from "@/components/admin/referral-codes/referral-code-manager";
+import type { Metadata } from "next";
 import { notFound, redirect } from "next/navigation";
+
+export const metadata: Metadata = {
+  title: "Kode Rujukan",
+  description: "Penerbitan dan kontrol kuota kode rujukan peserta di ExamLab.",
+  robots: {
+    index: false,
+    follow: false,
+  },
+};
 
 interface ReferralCodesPageProps {
   params: Promise<{

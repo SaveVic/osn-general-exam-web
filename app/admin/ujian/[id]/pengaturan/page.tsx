@@ -2,7 +2,17 @@ import { getAdminUser } from "@/actions/auth";
 import { getExamById } from "@/actions/exams";
 import { ExamForm } from "@/components/admin/exam-form";
 import { Settings } from "lucide-react";
+import type { Metadata } from "next";
 import { notFound, redirect } from "next/navigation";
+
+export const metadata: Metadata = {
+  title: "Pengaturan Naskah",
+  description: "Konfigurasi parameter ujian dan visibilitas nilai peserta di ExamLab.",
+  robots: {
+    index: false,
+    follow: false,
+  },
+};
 
 interface ExamSettingsPageProps {
   params: Promise<{
