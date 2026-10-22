@@ -1,6 +1,7 @@
 "use server";
 
 import { createClient } from "@/lib/supabase/server";
+import { getNowWIBIsoString, parseDateTimeInputWIB } from "@/lib/time";
 import { examFormSchema } from "@/lib/validations/exam";
 import type { ExamRow } from "@/types/database";
 import { revalidatePath } from "next/cache";
@@ -112,8 +113,8 @@ export async function createExamAction(
     title: validation.data.title,
     description: validation.data.description || null,
     duration_minutes: validation.data.duration_minutes,
-    starts_at: new Date(validation.data.starts_at).toISOString(),
-    ends_at: new Date(validation.data.ends_at).toISOString(),
+    starts_at: parseDateTimeInputWIB(validation.data.starts_at),
+    ends_at: parseDateTimeInputWIB(validation.data.ends_at),
     class_options: validation.data.class_options,
     is_published: validation.data.is_published,
     show_score: validation.data.show_score,
@@ -176,12 +177,12 @@ export async function updateExamAction(
       title: validation.data.title,
       description: validation.data.description || null,
       duration_minutes: validation.data.duration_minutes,
-      starts_at: new Date(validation.data.starts_at).toISOString(),
-      ends_at: new Date(validation.data.ends_at).toISOString(),
+      starts_at: parseDateTimeInputWIB(validation.data.starts_at),
+      ends_at: parseDateTimeInputWIB(validation.data.ends_at),
       class_options: validation.data.class_options,
       is_published: validation.data.is_published,
       show_score: validation.data.show_score,
-      updated_at: new Date().toISOString(),
+      updated_at: getNowWIBIsoString(),
     })
     .eq("id", id);
 
@@ -216,7 +217,7 @@ export async function toggleExamShowScoreAction(
       .from("exams")
       .update({
         show_score: showScore,
-        updated_at: new Date().toISOString(),
+        updated_at: getNowWIBIsoString(),
       })
       .eq("id", id);
 

@@ -21,6 +21,7 @@ import {
 import { ClassOptionsInput } from '@/components/admin/class-options-input'
 import { DateTimePicker } from '@/components/ui/date-time-picker'
 import { MarkdownRenderer } from '@/components/ui/markdown-renderer'
+import { toWIBInputString } from '@/lib/time'
 import {
   AlertCircle,
   BookOpen,
@@ -42,16 +43,6 @@ interface ExamFormProps {
 
 const initialState: ExamActionState = {
   success: false,
-}
-
-function toLocalInput(dateString?: string): string {
-  if (!dateString) return ''
-  const date = new Date(dateString)
-  if (isNaN(date.getTime())) return ''
-  const pad = (n: number) => n.toString().padStart(2, '0')
-  return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}T${pad(
-    date.getHours(),
-  )}:${pad(date.getMinutes())}`
 }
 
 export function ExamForm({
@@ -77,13 +68,11 @@ export function ExamForm({
     }
   }, [initialData?.description])
 
-  // Default waktu mulai: sekarang, selesai: 2 jam kemudian
+  // Default waktu mulai: sekarang, selesai: 2 jam kemudian (dalam zona waktu Asia/Jakarta)
   const now = new Date()
-  const defaultStart = toLocalInput(initialData?.starts_at || now.toISOString())
+  const defaultStart = toWIBInputString(initialData?.starts_at || now)
   const twoHoursLater = new Date(now.getTime() + 2 * 60 * 60 * 1000)
-  const defaultEnd = toLocalInput(
-    initialData?.ends_at || twoHoursLater.toISOString(),
-  )
+  const defaultEnd = toWIBInputString(initialData?.ends_at || twoHoursLater)
 
   const formContent = (
     <form action={formAction} className='space-y-6'>

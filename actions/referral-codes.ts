@@ -2,6 +2,7 @@
 
 import { createClient } from "@/lib/supabase/server";
 import { getAdminUser } from "@/actions/auth";
+import { parseDateTimeInputWIB } from "@/lib/time";
 import { referralCodeSchema, type ReferralCodeInput } from "@/lib/validations/referral-code";
 import type { ReferralCodeRow } from "@/types/database";
 import { revalidatePath } from "next/cache";
@@ -91,7 +92,7 @@ export async function createReferralCodeAction(
 
     finalExpiresAt = examData?.ends_at || null;
   } else if (validation.data.expiration_type === "custom" && validation.data.expires_at) {
-    finalExpiresAt = new Date(validation.data.expires_at).toISOString();
+    finalExpiresAt = parseDateTimeInputWIB(validation.data.expires_at);
   } else {
     finalExpiresAt = null;
   }

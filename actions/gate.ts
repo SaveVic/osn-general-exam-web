@@ -3,6 +3,7 @@
 import { cookies } from "next/headers";
 import { createServiceClient } from "@/lib/supabase/admin";
 import { hashSessionToken } from "@/lib/security/session-token";
+import { getNowWIBIsoString } from "@/lib/time";
 import { verifyGateCodeSchema } from "@/lib/validations/gate";
 import type { ExamRow, ReferralCodeRow } from "@/types/database";
 
@@ -186,7 +187,7 @@ export async function verifyReferralCodeAction(
             ? exam.class_options
             : [],
         },
-        serverTime: now.toISOString(),
+        serverTime: getNowWIBIsoString(),
         resumableSessionId: existingSessionId,
       },
     };

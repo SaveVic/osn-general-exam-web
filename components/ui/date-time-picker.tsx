@@ -53,6 +53,7 @@ function formatToInputString(date: Date): string {
 
 function formatDisplayDate(date: Date): string {
   return new Intl.DateTimeFormat("id-ID", {
+    timeZone: "Asia/Jakarta",
     weekday: "short",
     day: "numeric",
     month: "short",

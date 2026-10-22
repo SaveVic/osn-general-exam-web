@@ -68,6 +68,7 @@ export function ExamLobbyCard({ verifiedData }: ExamLobbyCardProps) {
     try {
       const d = new Date(isoString);
       return new Intl.DateTimeFormat("id-ID", {
+        timeZone: "Asia/Jakarta",
         weekday: "long",
         day: "numeric",
         month: "short",

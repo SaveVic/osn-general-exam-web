@@ -27,6 +27,7 @@ import {
   type QuestionScoringItem,
   type SessionAnswerScoringItem,
 } from '@/lib/exam/scoring'
+import { formatWIBIsoString, getNowWIBIsoString } from '@/lib/time'
 
 export interface ClientQuestionItem {
   id: string
@@ -128,7 +129,7 @@ export async function getActiveSessionFromCookieAction(): Promise<ActiveSessionR
       studentName: session.student_name,
       studentClass: session.student_class,
       startedAt: session.started_at,
-      serverEndTime: new Date(sessionEndMs).toISOString(),
+      serverEndTime: formatWIBIsoString(new Date(sessionEndMs)),
       durationMinutes: exam.duration_minutes,
     }
   } catch (err) {
@@ -238,7 +239,7 @@ export async function startExamSessionAction(
     // Sesi berakhir pada waktu mulai + durasi ujian, namun TIDAK boleh melebihi batas resmi ends_at ujian
     const durationMs = exam.duration_minutes * 60 * 1000
     const sessionEndMs = Math.min(nowMs + durationMs, endMs)
-    const serverEndTime = new Date(sessionEndMs).toISOString()
+    const serverEndTime = formatWIBIsoString(new Date(sessionEndMs))
 
     // 6.5. Periksa apakah peramban pemanggil telah memiliki sesi aktif untuk naskah ujian ini (idempotency guard)
     const cookieStore = await cookies()
@@ -282,8 +283,8 @@ export async function startExamSessionAction(
                 examTitle: exam.title,
                 durationMinutes: exam.duration_minutes,
                 startedAt: existingSessionData.started_at,
-                serverEndTime: new Date(existingSessionEndMs).toISOString(),
-                serverTime: now.toISOString(),
+                serverEndTime: formatWIBIsoString(new Date(existingSessionEndMs)),
+                serverTime: getNowWIBIsoString(),
                 studentName: existingSessionData.student_name,
                 studentClass: existingSessionData.student_class,
                 questions: questionsData as ClientQuestionItem[],
@@ -306,7 +307,7 @@ export async function startExamSessionAction(
         referral_code_id: referral.id,
         student_name: studentName,
         student_class: studentClass,
-        started_at: now.toISOString(),
+        started_at: getNowWIBIsoString(),
         is_completed: false,
         session_token_hash: tokenHash,
       })
@@ -447,7 +448,7 @@ export async function startExamSessionAction(
         durationMinutes: exam.duration_minutes,
         startedAt: session.started_at,
         serverEndTime,
-        serverTime: now.toISOString(),
+        serverTime: getNowWIBIsoString(),
         studentName,
         studentClass,
         questions: (questionsData || []) as ClientQuestionItem[],
@@ -633,7 +634,7 @@ export async function syncBatchAnswersAction(
 
     // 3. Lakukan operasi UPSERT batch ke tabel session_answers
     const supabase = createServiceClient()
-    const nowIso = now.toISOString()
+    const nowIso = getNowWIBIsoString()
 
     const upsertRows = answers.map((item) => ({
       session_id: sessionId,
@@ -723,17 +724,16 @@ export async function recoverExamSessionAction(
     }
 
     const { session, exam } = authResult
-    const now = new Date()
-    const nowIso = now.toISOString()
+    const nowIso = getNowWIBIsoString()
 
     const startedMs = new Date(session.started_at).getTime()
     const durationMs = (exam?.duration_minutes ?? 90) * 60 * 1000
     const examEndMs = exam
       ? new Date(exam.ends_at).getTime()
       : startedMs + durationMs
-    const serverEndTime = new Date(
-      Math.min(startedMs + durationMs, examEndMs),
-    ).toISOString()
+    const serverEndTime = formatWIBIsoString(
+      new Date(Math.min(startedMs + durationMs, examEndMs)),
+    )
 
     const supabase = createServiceClient()
 
@@ -917,7 +917,7 @@ export async function submitExamSessionAction(
     }
 
     const now = new Date()
-    const nowIso = now.toISOString()
+    const nowIso = getNowWIBIsoString()
 
     // Verifikasi aturan toleransi keterlambatan (Grace Period 60 detik)
     // Sesuai spesifikasi F4-04: Delta t = t_submitted - t_started <= duration + 60 detik

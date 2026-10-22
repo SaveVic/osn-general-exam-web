@@ -41,6 +41,7 @@ function formatExamDate(dateStr: string): string {
   try {
     const date = new Date(dateStr);
     return new Intl.DateTimeFormat("id-ID", {
+      timeZone: "Asia/Jakarta",
       day: "numeric",
       month: "short",
       year: "numeric",

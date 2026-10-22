@@ -18,6 +18,7 @@ export function VerifiedExamPreview() {
     try {
       const d = new Date(isoString);
       return new Intl.DateTimeFormat("id-ID", {
+        timeZone: "Asia/Jakarta",
         day: "numeric",
         month: "short",
         year: "numeric",

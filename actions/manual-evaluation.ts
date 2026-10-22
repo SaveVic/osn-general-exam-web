@@ -2,6 +2,7 @@
 
 import { createServiceClient } from "@/lib/supabase/admin";
 import { getAdminUser } from "@/actions/auth";
+import { getNowWIBIsoString } from "@/lib/time";
 import {
   roundToTwoDecimals,
   extractShortAnswer,
@@ -263,7 +264,7 @@ export async function updateManualScoreAction(
     }
 
     const roundedScore = roundToTwoDecimals(score);
-    const nowIso = new Date().toISOString();
+    const nowIso = getNowWIBIsoString();
 
     // 2. Ambil session_answers yang ada saat ini
     const answersTable = supabase.from("session_answers");

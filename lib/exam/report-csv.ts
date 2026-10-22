@@ -48,6 +48,7 @@ export function formatReportTimestamp(isoString: string | null): string {
   if (isNaN(date.getTime())) return "-";
 
   return new Intl.DateTimeFormat("id-ID", {
+    timeZone: "Asia/Jakarta",
     day: "2-digit",
     month: "short",
     year: "numeric",

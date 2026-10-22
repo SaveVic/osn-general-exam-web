@@ -142,6 +142,14 @@ Klik tombol **"New query"**, beri nama *`01_initial_schema`*, tempelkan kode SQL
 -- SKEMA BASIS DATA UTAMA: PLATFORM UJIAN TEKNIS
 -- =============================================================================
 
+-- 0. Standardisasi Timezone: Asia/Jakarta (WIB / UTC+7)
+ALTER DATABASE postgres SET timezone TO 'Asia/Jakarta';
+ALTER ROLE postgres SET timezone TO 'Asia/Jakarta';
+ALTER ROLE authenticated SET timezone TO 'Asia/Jakarta';
+ALTER ROLE anon SET timezone TO 'Asia/Jakarta';
+ALTER ROLE service_role SET timezone TO 'Asia/Jakarta';
+SET timezone TO 'Asia/Jakarta';
+
 CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
 
 -- 1. TABEL: exams (Paket Naskah Ujian)

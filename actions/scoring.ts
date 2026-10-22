@@ -2,6 +2,7 @@
 
 import { createServiceClient } from "@/lib/supabase/admin";
 import { getAdminUser } from "@/actions/auth";
+import { getNowWIBIsoString } from "@/lib/time";
 import {
   calculateExamSessionScores,
   type QuestionScoringItem,
@@ -129,7 +130,7 @@ export async function scoreExamSession(
       });
     }
 
-    const nowIso = new Date().toISOString();
+    const nowIso = getNowWIBIsoString();
     const upsertRows = questions.map((q) => {
       const existing = existingAnswersMap.get(q.id);
       return {
@@ -322,7 +323,7 @@ export async function recalculateExamScoresAction(
       });
     }
 
-    const nowIso = new Date().toISOString();
+    const nowIso = getNowWIBIsoString();
     const allUpsertRows: Array<{
       session_id: string;
       question_id: string;

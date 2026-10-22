@@ -4,6 +4,7 @@ import { revalidatePath } from "next/cache";
 import { createServiceClient } from "@/lib/supabase/admin";
 import { getAdminUser } from "@/actions/auth";
 import { scoreExamSession } from "@/actions/scoring";
+import { getNowWIBIsoString } from "@/lib/time";
 import type { ExamRow, Json } from "@/types/database";
 
 export interface MonitoredSessionRow {
@@ -242,7 +243,7 @@ export async function getExamMonitoringData(
 
     return {
       success: true,
-      serverTime: new Date().toISOString(),
+      serverTime: getNowWIBIsoString(),
       exam: exam as ExamRow,
       totalQuestions,
       sessions,
@@ -315,7 +316,7 @@ export async function forceSubmitSessionAction(
       };
     }
 
-    const nowIso = new Date().toISOString();
+    const nowIso = getNowWIBIsoString();
 
     const { error: updateError } = await sessionTable
       .update({
