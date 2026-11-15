@@ -3,7 +3,7 @@ name: Supabase Database Keep-Alive
 on:
   schedule:
     # Berjalan setiap 3 hari sekali pada pukul 00:00 UTC (jauh di bawah batas auto-pause 7 hari Supabase)
-    - cron: '0 0 */3 * *'
+    - cron: '0 0 */2 * *'
   workflow_dispatch: # Memungkinkan eksekusi manual kapan saja dari tab GitHub Actions
 
 jobs:
