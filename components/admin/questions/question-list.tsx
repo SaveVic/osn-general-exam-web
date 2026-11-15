@@ -32,8 +32,10 @@ import {
   Plus,
   RotateCcw,
   Trash2,
+  Upload,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { ImportQuestionsModal } from "./import-questions-modal";
 
 interface QuestionListProps {
   examId: string;
@@ -42,6 +44,7 @@ interface QuestionListProps {
   onAddQuestion: () => void;
   onEditQuestion: (question: QuestionRow) => void;
   onResetSuccess?: () => void;
+  onImportSuccess?: () => void;
 }
 
 export function QuestionList({
@@ -51,13 +54,19 @@ export function QuestionList({
   onAddQuestion,
   onEditQuestion,
   onResetSuccess,
+  onImportSuccess,
 }: QuestionListProps) {
   const [isPending, setIsPending] = useState(false);
   const [deleteTarget, setDeleteTarget] = useState<QuestionRow | null>(null);
   const [resetDialogOpen, setResetDialogOpen] = useState(false);
   const [resetError, setResetError] = useState<string | null>(null);
+  const [importModalOpen, setImportModalOpen] = useState(false);
 
   const hasParticipants = sessionCount > 0;
+  const nextOrderIndex =
+    questions.length > 0
+      ? Math.max(...questions.map((q) => q.order_index || 0)) + 1
+      : 1;
 
   // Reorder naik
   const handleMoveUp = async (index: number) => {
@@ -163,69 +172,91 @@ export function QuestionList({
     }
   };
 
-  if (questions.length === 0) {
-    return (
-      <div className="rounded-xl border border-dashed border-slate-300 bg-white p-12 text-center dark:border-slate-800 dark:bg-slate-900">
-        <div className="mx-auto mb-4 flex size-14 items-center justify-center rounded-2xl bg-indigo-50 text-indigo-600 dark:bg-indigo-950/50 dark:text-indigo-400">
-          <FileQuestion className="size-7" />
-        </div>
-        <h3 className="text-base font-semibold text-slate-900 dark:text-slate-100">
-          Belum Ada Butir Soal
-        </h3>
-        <p className="mx-auto mt-1 max-w-sm text-sm text-slate-500 dark:text-slate-400">
-          Naskah ujian ini belum memiliki butir pertanyaan. Tambahkan butir soal pertama sekarang.
-        </p>
-        <div className="mt-6">
-          <Button
-            onClick={onAddQuestion}
-            className="bg-indigo-600 text-white hover:bg-indigo-700"
-          >
-            <Plus className="mr-1.5 size-4" />
-            Tambah Butir Soal Pertama
-          </Button>
-        </div>
-      </div>
-    );
-  }
-
   return (
-    <div className="space-y-4">
-      {/* Tombol Aksi Tambah & Reset di Atas */}
-      <div className="flex flex-wrap items-center justify-between gap-2">
-        <span className="text-xs font-semibold tracking-wider text-slate-500 uppercase dark:text-slate-400">
-          Daftar Soal ({questions.length} Butir)
-        </span>
-        <div className="flex items-center gap-2">
-          <Button
-            type="button"
-            variant="outline"
-            size="sm"
-            disabled={isPending || hasParticipants}
-            onClick={() => {
-              setResetError(null);
-              setResetDialogOpen(true);
-            }}
-            title={
-              hasParticipants
-                ? "Reset soal tidak dapat dilakukan karena sudah ada peserta yang mengikuti ujian"
-                : "Hapus seluruh butir soal pada naskah ujian ini"
-            }
-            className="border-rose-200 text-rose-600 hover:bg-rose-50 hover:text-rose-700 dark:border-rose-900/60 dark:text-rose-400 dark:hover:bg-rose-950/40 dark:hover:text-rose-300"
-          >
-            <RotateCcw className="mr-1.5 size-4" />
-            Reset Soal
-          </Button>
-          <Button
-            onClick={onAddQuestion}
-            size="sm"
-            disabled={isPending}
-            className="bg-indigo-600 text-white hover:bg-indigo-700"
-          >
-            <Plus className="mr-1.5 size-4" />
-            Tambah Soal
-          </Button>
+    <>
+      {questions.length === 0 ? (
+        <div className="rounded-xl border border-dashed border-slate-300 bg-white p-12 text-center dark:border-slate-800 dark:bg-slate-900">
+          <div className="mx-auto mb-4 flex size-14 items-center justify-center rounded-2xl bg-indigo-50 text-indigo-600 dark:bg-indigo-950/50 dark:text-indigo-400">
+            <FileQuestion className="size-7" />
+          </div>
+          <h3 className="text-base font-semibold text-slate-900 dark:text-slate-100">
+            Belum Ada Butir Soal
+          </h3>
+          <p className="mx-auto mt-1 max-w-sm text-sm text-slate-500 dark:text-slate-400">
+            Naskah ujian ini belum memiliki butir pertanyaan. Tambahkan satu per satu atau impor
+            banyak soal sekaligus dari file JSON.
+          </p>
+          <div className="mt-6 flex flex-wrap items-center justify-center gap-2.5">
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => setImportModalOpen(true)}
+              disabled={isPending}
+              className="border-slate-300 dark:border-slate-700"
+            >
+              <Upload className="mr-1.5 size-4" />
+              Import Soal
+            </Button>
+            <Button
+              onClick={onAddQuestion}
+              disabled={isPending}
+              className="bg-indigo-600 text-white hover:bg-indigo-700"
+            >
+              <Plus className="mr-1.5 size-4" />
+              Tambah Butir Soal Pertama
+            </Button>
+          </div>
         </div>
-      </div>
+      ) : (
+        <div className="space-y-4">
+          {/* Tombol Aksi Tambah, Import, & Reset di Atas */}
+          <div className="flex flex-wrap items-center justify-between gap-2">
+            <span className="text-xs font-semibold tracking-wider text-slate-500 uppercase dark:text-slate-400">
+              Daftar Soal ({questions.length} Butir)
+            </span>
+            <div className="flex flex-wrap items-center gap-2">
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                disabled={isPending || hasParticipants}
+                onClick={() => {
+                  setResetError(null);
+                  setResetDialogOpen(true);
+                }}
+                title={
+                  hasParticipants
+                    ? "Reset soal tidak dapat dilakukan karena sudah ada peserta yang mengikuti ujian"
+                    : "Hapus seluruh butir soal pada naskah ujian ini"
+                }
+                className="border-rose-200 text-rose-600 hover:bg-rose-50 hover:text-rose-700 dark:border-rose-900/60 dark:text-rose-400 dark:hover:bg-rose-950/40 dark:hover:text-rose-300"
+              >
+                <RotateCcw className="mr-1.5 size-4" />
+                Reset Soal
+              </Button>
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                disabled={isPending}
+                onClick={() => setImportModalOpen(true)}
+                title="Impor beberapa butir soal sekaligus dari file JSON"
+                className="border-slate-300 dark:border-slate-700"
+              >
+                <Upload className="mr-1.5 size-4" />
+                Import Soal
+              </Button>
+              <Button
+                onClick={onAddQuestion}
+                size="sm"
+                disabled={isPending}
+                className="bg-indigo-600 text-white hover:bg-indigo-700"
+              >
+                <Plus className="mr-1.5 size-4" />
+                Tambah Soal
+              </Button>
+            </div>
+          </div>
 
       {/* Pemberitahuan Penguncian Reset jika Sudah Ada Peserta */}
       {hasParticipants && (
@@ -444,7 +475,18 @@ export function QuestionList({
           </DialogFooter>
         </DialogContent>
       </Dialog>
-    </div>
+        </div>
+      )}
+
+      {/* Modal Import Soal dari Berkas JSON */}
+      <ImportQuestionsModal
+        open={importModalOpen}
+        onOpenChange={setImportModalOpen}
+        examId={examId}
+        nextOrderIndex={nextOrderIndex}
+        onSuccess={() => onImportSuccess?.()}
+      />
+    </>
   );
 }
 

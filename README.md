@@ -279,6 +279,7 @@ Untuk panduan operasional dan arsitektur teknis yang lebih mendalam, silakan tel
 
 * 📐 [**docs/architecture.md**](docs/architecture.md): Prinsip desain sistem, efisiensi Serverless, konsolidasi mutasi *Single-Pass*, dan kontrol konkurensi OCC.
 * 🗄️ [**docs/database-schema.md**](docs/database-schema.md): Skema relasi PostgreSQL, skrip DDL lengkap, fungsi Stored Procedure batch RPC, agregat view, dan Row Level Security (RLS).
+* 📥 [**docs/question-import-json-guide.md**](docs/question-import-json-guide.md): Panduan struktur file JSON, aturan validasi per tipe soal, tips escaping LaTeX, dan contoh siap pakai untuk fitur **Import Soal**.
 * 🔒 [**docs/security.md**](docs/security.md): Standar keamanan AppSec, mitigasi Stored XSS KaTeX, pengerasan Supabase Auth, dan injeksi OWASP HTTP Headers.
 * 🚀 [**docs/deployment.md**](docs/deployment.md): Panduan lengkap deployment produksi ke Vercel Hobby dan Supabase Free Tier tanpa biaya.
 * 📋 [**docs/exam-day-runbook.md**](docs/exam-day-runbook.md): Prosedur operasional panitia/proktor pada hari pelaksanaan ujian (T-60 menit, saat ujian, terminasi darurat, dan ekspor rekapitulasi).

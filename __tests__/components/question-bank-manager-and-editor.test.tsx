@@ -16,6 +16,12 @@ const mockResetQuestionsAction = vi.fn(async () => ({
   message: "Seluruh butir soal berhasil direset.",
 }));
 
+const mockImportQuestionsAction = vi.fn(async () => ({
+  success: true,
+  importedCount: 2,
+  message: "2 butir soal berhasil diimpor ke urutan #2 s.d. #3.",
+}));
+
 vi.mock("@/actions/questions", () => ({
   createQuestionAction: vi.fn(async () => ({ success: true })),
   updateQuestionAction: vi.fn(async () => ({ success: true })),
@@ -24,6 +30,8 @@ vi.mock("@/actions/questions", () => ({
   reorderQuestionsAction: vi.fn(async () => ({ success: true })),
   resetQuestionsAction: (...args: unknown[]) =>
     mockResetQuestionsAction(...(args as [])),
+  importQuestionsAction: (...args: unknown[]) =>
+    mockImportQuestionsAction(...(args as [])),
 }));
 
 vi.mock("@/actions/storage", () => ({
@@ -67,6 +75,11 @@ describe("QuestionBankManager Component", () => {
     mockResetQuestionsAction.mockResolvedValue({
       success: true,
       message: "Seluruh butir soal berhasil direset.",
+    });
+    mockImportQuestionsAction.mockResolvedValue({
+      success: true,
+      importedCount: 2,
+      message: "2 butir soal berhasil diimpor ke urutan #2 s.d. #3.",
     });
   });
 
@@ -177,6 +190,104 @@ describe("QuestionBankManager Component", () => {
       ).toBeInTheDocument();
     });
     expect(screen.getByText("Konfirmasi Reset Semua Soal")).toBeInTheDocument();
+  });
+
+  it("menampilkan tombol Import Soal saat bank soal kosong dan membuka modal import dengan target nomor #1", () => {
+    render(<QuestionBankManager exam={mockExam} questions={[]} sessionCount={0} />);
+
+    const importBtn = screen.getByRole("button", { name: /Import Soal/i });
+    expect(importBtn).toBeEnabled();
+
+    fireEvent.click(importBtn);
+    expect(screen.getByText("Import Soal dari JSON")).toBeInTheDocument();
+    expect(screen.getByText("#1")).toBeInTheDocument();
+  });
+
+  it("memvalidasi file JSON valid, menampilkan pratinjau append (#2-#3), dan memanggil importQuestionsAction", async () => {
+    render(<QuestionBankManager exam={mockExam} questions={mockQuestions} sessionCount={0} />);
+
+    fireEvent.click(screen.getByRole("button", { name: /Import Soal/i }));
+    expect(screen.getByText("Import Soal dari JSON")).toBeInTheDocument();
+
+    const jsonContent = JSON.stringify([
+      {
+        question_type: "single_choice",
+        prompt: "Berapakah $3 + 3$?",
+        points: 3,
+        options: [
+          { id: "A", text: "5" },
+          { id: "B", text: "6" },
+        ],
+        correct_answer: { selected: "B" },
+      },
+      {
+        question_type: "short_answer",
+        prompt: "Sebutkan bilangan prima terkecil!",
+        points: 2,
+        correct_answer: { text: "2" },
+      },
+    ]);
+
+    const fileInput = document.getElementById("import-questions-file-input") as HTMLInputElement;
+    const jsonFile = new File([jsonContent], "paket-tambahan.json", {
+      type: "application/json",
+    });
+
+    fireEvent.change(fileInput, { target: { files: [jsonFile] } });
+
+    await waitFor(() => {
+      expect(screen.getByText("2 butir soal siap diimpor")).toBeInTheDocument();
+    });
+
+    expect(screen.getByText("Nomor #2–#3")).toBeInTheDocument();
+    expect(screen.getByText("+5 Poin")).toBeInTheDocument();
+
+    const confirmBtn = screen.getByRole("button", { name: /Import 2 Soal/i });
+    expect(confirmBtn).toBeEnabled();
+    fireEvent.click(confirmBtn);
+
+    await waitFor(() => {
+      expect(mockImportQuestionsAction).toHaveBeenCalledWith(
+        "exam-99",
+        expect.arrayContaining([
+          expect.objectContaining({
+            question_type: "single_choice",
+            prompt: "Berapakah $3 + 3$?",
+            points: 3,
+          }),
+          expect.objectContaining({
+            question_type: "short_answer",
+            prompt: "Sebutkan bilangan prima terkecil!",
+            points: 2,
+            options: [],
+          }),
+        ])
+      );
+      expect(mockRefresh).toHaveBeenCalledTimes(1);
+    });
+  });
+
+  it("menampilkan pesan galat saat file JSON memiliki format tidak valid dan menonaktifkan tombol import", async () => {
+    render(<QuestionBankManager exam={mockExam} questions={mockQuestions} sessionCount={0} />);
+
+    fireEvent.click(screen.getByRole("button", { name: /Import Soal/i }));
+
+    const fileInput = document.getElementById("import-questions-file-input") as HTMLInputElement;
+    const badFile = new File(["{ invalid json"], "rusak.json", {
+      type: "application/json",
+    });
+
+    fireEvent.change(fileInput, { target: { files: [badFile] } });
+
+    await waitFor(() => {
+      expect(
+        screen.getByText(/Berkas tidak dapat di-parse sebagai JSON yang valid/i)
+      ).toBeInTheDocument();
+    });
+
+    const submitBtn = screen.getByRole("button", { name: /^Import Soal$/i });
+    expect(submitBtn).toBeDisabled();
+    expect(mockImportQuestionsAction).not.toHaveBeenCalled();
   });
 });
 

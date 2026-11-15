@@ -120,6 +120,7 @@ export function QuestionBankManager({
           onAddQuestion={handleStartAdd}
           onEditQuestion={handleStartEdit}
           onResetSuccess={() => router.refresh()}
+          onImportSuccess={() => router.refresh()}
         />
       )}
     </div>

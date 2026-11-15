@@ -2,7 +2,11 @@
 
 import { getAdminUser } from "@/actions/auth";
 import { createClient } from "@/lib/supabase/server";
-import { questionInputSchema, type QuestionInput } from "@/lib/validations/question";
+import {
+  parseAndValidateQuestionsJson,
+  questionInputSchema,
+  type QuestionInput,
+} from "@/lib/validations/question";
 import type { QuestionRow } from "@/types/database";
 import { revalidatePath } from "next/cache";
 
@@ -11,6 +15,13 @@ export interface QuestionActionState {
   message?: string;
   errors?: Record<string, string[]>;
   data?: QuestionRow;
+}
+
+export interface ImportQuestionsActionState {
+  success: boolean;
+  message?: string;
+  importedCount?: number;
+  errors?: string[];
 }
 
 /**
@@ -388,6 +399,107 @@ export async function resetQuestionsAction(
   return {
     success: true,
     message: "Seluruh butir soal berhasil direset.",
+  };
+}
+
+/**
+ * Mengimpor beberapa butir soal sekaligus dari payload JSON dan menempatkannya
+ * secara berurutan di nomor paling belakang (append).
+ */
+export async function importQuestionsAction(
+  examId: string,
+  rawPayload: unknown
+): Promise<ImportQuestionsActionState> {
+  const user = await getAdminUser();
+  if (!user) {
+    return {
+      success: false,
+      message: "Akses ditolak. Silakan masuk kembali sebagai administrator.",
+    };
+  }
+
+  if (!examId) {
+    return {
+      success: false,
+      message: "ID naskah ujian tidak valid.",
+    };
+  }
+
+  const parsed = parseAndValidateQuestionsJson(rawPayload);
+  if (!parsed.success) {
+    return {
+      success: false,
+      message: parsed.errors[0] || "Validasi format JSON soal gagal.",
+      errors: parsed.errors,
+    };
+  }
+
+  const supabase = await createClient();
+
+  const { data: examData, error: examError } = await supabase
+    .from("exams")
+    .select("id")
+    .eq("id", examId)
+    .single();
+
+  if (examError || !examData) {
+    return {
+      success: false,
+      message: "Naskah ujian tidak ditemukan.",
+    };
+  }
+
+  // Ambil order_index maksimum agar soal baru selalu diletakkan di belakang (append)
+  const { data: maxOrderData, error: maxOrderError } = await supabase
+    .from("questions")
+    .select("order_index")
+    .eq("exam_id", examId)
+    .order("order_index", { ascending: false })
+    .limit(1);
+
+  if (maxOrderError) {
+    console.error("Gagal memeriksa nomor urut soal terakhir:", maxOrderError.message);
+    return {
+      success: false,
+      message: `Gagal menentukan urutan soal berikutnya: ${maxOrderError.message}`,
+    };
+  }
+
+  const baseOrderIndex =
+    maxOrderData && maxOrderData.length > 0 ? maxOrderData[0].order_index || 0 : 0;
+
+  const rowsToInsert = parsed.data.map((item, idx) => ({
+    exam_id: examId,
+    order_index: baseOrderIndex + idx + 1,
+    question_type: item.question_type,
+    prompt: item.prompt,
+    options: item.options,
+    correct_answer: item.correct_answer,
+    points: item.points,
+  }));
+
+  const { data: insertedRows, error: insertError } = await supabase
+    .from("questions")
+    .insert(rowsToInsert)
+    .select("id");
+
+  if (insertError) {
+    console.error("Gagal mengimpor butir soal:", insertError.message);
+    return {
+      success: false,
+      message: `Gagal menyimpan butir soal hasil import: ${insertError.message}`,
+    };
+  }
+
+  const importedCount = insertedRows?.length ?? rowsToInsert.length;
+
+  revalidatePath(`/admin/ujian/${examId}/soal`);
+  revalidatePath("/admin/dasbor");
+
+  return {
+    success: true,
+    importedCount,
+    message: `${importedCount} butir soal berhasil diimpor ke urutan #${baseOrderIndex + 1} s.d. #${baseOrderIndex + importedCount}.`,
   };
 }
 

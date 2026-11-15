@@ -4,6 +4,7 @@ import { createExamAction, togglePublishAction } from "@/actions/exams";
 import {
   createQuestionAction,
   deleteQuestionAction,
+  importQuestionsAction,
   resetQuestionsAction,
 } from "@/actions/questions";
 import { uploadExamAssetAction } from "@/actions/storage";
@@ -293,6 +294,172 @@ describe("F1-02 & F1-03: Integrasi Manajemen Ujian & Bank Soal (actions/exams.ts
     expect(mockDeleteEq).toHaveBeenCalledWith("exam_id", "exam-1");
     expect(mockRevalidatePath).toHaveBeenCalledWith("/admin/ujian/exam-1/soal");
     expect(mockRevalidatePath).toHaveBeenCalledWith("/admin/dasbor");
+  });
+
+  it("importQuestionsAction menolak akses apabila administrator belum masuk", async () => {
+    mockGetUser.mockResolvedValueOnce({ data: { user: null } });
+
+    const res = await importQuestionsAction("exam-1", [
+      {
+        question_type: "short_answer",
+        prompt: "Berapa 1 + 1?",
+        correct_answer: { text: "2" },
+      },
+    ]);
+
+    expect(res.success).toBe(false);
+    expect(res.message).toContain("Akses ditolak");
+    expect(mockFrom).not.toHaveBeenCalled();
+  });
+
+  it("importQuestionsAction menolak payload JSON tidak valid sebelum menyentuh database", async () => {
+    mockGetUser.mockResolvedValueOnce({ data: { user: { id: "admin-1" } } });
+
+    const res = await importQuestionsAction("exam-1", [
+      {
+        question_type: "single_choice",
+        prompt: "Soal dengan kunci tidak valid",
+        options: [
+          { id: "A", text: "1" },
+          { id: "B", text: "2" },
+        ],
+        correct_answer: { selected: "Z" },
+      },
+    ]);
+
+    expect(res.success).toBe(false);
+    expect(res.errors?.[0]).toContain("Soal #1:");
+    expect(mockFrom).not.toHaveBeenCalled();
+  });
+
+  it("importQuestionsAction menempatkan soal baru di nomor belakang (append) setelah order_index terakhir", async () => {
+    mockGetUser.mockResolvedValueOnce({ data: { user: { id: "admin-1" } } });
+
+    // 1. Cek exam ada
+    mockFrom.mockReturnValueOnce({
+      select: vi.fn(() => ({
+        eq: vi.fn(() => ({
+          single: vi.fn().mockResolvedValueOnce({ data: { id: "exam-1" }, error: null }),
+        })),
+      })),
+    });
+
+    // 2. Cek order_index tertinggi saat ini = 5
+    mockFrom.mockReturnValueOnce({
+      select: vi.fn(() => ({
+        eq: vi.fn(() => ({
+          order: vi.fn(() => ({
+            limit: vi.fn().mockResolvedValueOnce({
+              data: [{ order_index: 5 }],
+              error: null,
+            }),
+          })),
+        })),
+      })),
+    });
+
+    // 3. Bulk insert 2 soal -> order_index harus 6 dan 7 (mengabaikan order_index bawaan JSON)
+    const mockInsert = vi.fn((rows) => ({
+      select: vi.fn().mockResolvedValueOnce({
+        data: rows.map((_: unknown, idx: number) => ({ id: `new-q-${idx + 1}` })),
+        error: null,
+      }),
+    }));
+    mockFrom.mockReturnValueOnce({
+      insert: mockInsert,
+    });
+
+    const res = await importQuestionsAction("exam-1", [
+      {
+        order_index: 1,
+        question_type: "single_choice",
+        prompt: "Soal import pertama",
+        points: 2,
+        options: [
+          { id: "A", text: "Benar" },
+          { id: "B", text: "Salah" },
+        ],
+        correct_answer: { selected: "A" },
+      },
+      {
+        order_index: 2,
+        question_type: "short_answer",
+        prompt: "Soal import kedua",
+        points: 5,
+        correct_answer: { text: "42" },
+      },
+    ]);
+
+    expect(res.success).toBe(true);
+    expect(res.importedCount).toBe(2);
+    expect(res.message).toContain("#6 s.d. #7");
+
+    const insertedPayload = mockInsert.mock.calls[0][0];
+    expect(insertedPayload).toHaveLength(2);
+    expect(insertedPayload[0]).toEqual(
+      expect.objectContaining({
+        exam_id: "exam-1",
+        order_index: 6,
+        question_type: "single_choice",
+        points: 2,
+      })
+    );
+    expect(insertedPayload[1]).toEqual(
+      expect.objectContaining({
+        exam_id: "exam-1",
+        order_index: 7,
+        question_type: "short_answer",
+        options: [],
+        points: 5,
+      })
+    );
+    expect(mockRevalidatePath).toHaveBeenCalledWith("/admin/ujian/exam-1/soal");
+    expect(mockRevalidatePath).toHaveBeenCalledWith("/admin/dasbor");
+  });
+
+  it("importQuestionsAction memulai dari nomor 1 apabila bank soal masih kosong", async () => {
+    mockGetUser.mockResolvedValueOnce({ data: { user: { id: "admin-1" } } });
+
+    mockFrom.mockReturnValueOnce({
+      select: vi.fn(() => ({
+        eq: vi.fn(() => ({
+          single: vi.fn().mockResolvedValueOnce({ data: { id: "exam-1" }, error: null }),
+        })),
+      })),
+    });
+
+    mockFrom.mockReturnValueOnce({
+      select: vi.fn(() => ({
+        eq: vi.fn(() => ({
+          order: vi.fn(() => ({
+            limit: vi.fn().mockResolvedValueOnce({ data: [], error: null }),
+          })),
+        })),
+      })),
+    });
+
+    const mockInsert = vi.fn().mockReturnValueOnce({
+      select: vi.fn().mockResolvedValueOnce({
+        data: [{ id: "new-q-1" }],
+        error: null,
+      }),
+    });
+    mockFrom.mockReturnValueOnce({
+      insert: mockInsert,
+    });
+
+    const res = await importQuestionsAction("exam-1", [
+      {
+        question_type: "short_answer",
+        prompt: "Soal pertama pada bank kosong",
+        correct_answer: { text: "100" },
+      },
+    ]);
+
+    expect(res.success).toBe(true);
+    expect(mockInsert).toHaveBeenCalledWith([
+      expect.objectContaining({ order_index: 1 }),
+    ]);
   });
 });
 
