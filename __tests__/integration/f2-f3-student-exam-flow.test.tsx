@@ -7,6 +7,7 @@ import {
   verifyActiveSessionAction,
 } from "@/actions/exam-session";
 import { hashSessionToken } from "@/lib/security/session-token";
+import { formatWIBIsoString } from "@/lib/time";
 import { useExamSessionStore } from "@/lib/stores/exam-session-store";
 import { ExamRoomShell } from "@/components/exam-room/exam-room-shell";
 
@@ -172,8 +173,11 @@ describe("F2-01 & F3-01: Integrasi Keamanan Gerbang, Inisialisasi Sesi, & Zero A
     expect(result.data?.questions[0]).not.toHaveProperty("correct_answer");
 
     // B. BUKTI SERVER-AUTHORITATIVE TIME:
-    // Karena ends_at tinggal 30 menit sedangkan durasi 90 menit, serverEndTime dipotong tepat ke ends_at
-    expect(result.data?.serverEndTime).toBe(endsAt);
+    // Karena ends_at tinggal 30 menit sedangkan durasi 90 menit, serverEndTime dipotong tepat ke ends_at (format WIB +07:00)
+    expect(result.data?.serverEndTime).toBe(formatWIBIsoString(new Date(endsAt)));
+    expect(new Date(result.data?.serverEndTime || "").getTime()).toBe(
+      new Date(endsAt).getTime()
+    );
 
     // C. BUKTI KEAMANAN COOKIE HTTP-ONLY & TOKEN HASH:
     expect(mockCookieSet).toHaveBeenCalledTimes(1);

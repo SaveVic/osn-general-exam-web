@@ -1,19 +1,29 @@
 import React from "react";
-import { describe, it, expect, vi } from "vitest";
-import { render, screen } from "@testing-library/react";
+import { describe, it, expect, vi, beforeEach } from "vitest";
+import { render, screen, fireEvent, waitFor } from "@testing-library/react";
 import { QuestionBankManager } from "@/components/admin/questions/question-bank-manager";
 import { QuestionEditor } from "@/components/admin/questions/question-editor";
 import type { ExamRow, QuestionRow } from "@/types/database";
 
+const mockRefresh = vi.fn();
+
 vi.mock("next/navigation", () => ({
-  useRouter: () => ({ refresh: vi.fn(), push: vi.fn() }),
+  useRouter: () => ({ refresh: mockRefresh, push: vi.fn() }),
+}));
+
+const mockResetQuestionsAction = vi.fn(async () => ({
+  success: true,
+  message: "Seluruh butir soal berhasil direset.",
 }));
 
 vi.mock("@/actions/questions", () => ({
   createQuestionAction: vi.fn(async () => ({ success: true })),
   updateQuestionAction: vi.fn(async () => ({ success: true })),
   deleteQuestionAction: vi.fn(async () => ({ success: true })),
+  duplicateQuestionAction: vi.fn(async () => ({ success: true })),
   reorderQuestionsAction: vi.fn(async () => ({ success: true })),
+  resetQuestionsAction: (...args: unknown[]) =>
+    mockResetQuestionsAction(...(args as [])),
 }));
 
 vi.mock("@/actions/storage", () => ({
@@ -52,6 +62,14 @@ const mockQuestions: QuestionRow[] = [
 ];
 
 describe("QuestionBankManager Component", () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    mockResetQuestionsAction.mockResolvedValue({
+      success: true,
+      message: "Seluruh butir soal berhasil direset.",
+    });
+  });
+
   it("hanya menampilkan title 'Bank Soal Ujian', nama ujian, total soal, total skor, dan durasi pada content box atas", () => {
     render(<QuestionBankManager exam={mockExam} questions={mockQuestions} />);
 
@@ -75,6 +93,90 @@ describe("QuestionBankManager Component", () => {
     expect(screen.queryByText("Pengaturan Naskah")).not.toBeInTheDocument();
     expect(screen.queryByText("Opsi Kelas")).not.toBeInTheDocument();
     expect(screen.queryByText("Petunjuk pengerjaan yang tidak perlu tampil di header box")).not.toBeInTheDocument();
+  });
+
+  it("menampilkan tombol Reset Soal, membuka dialog konfirmasi, dan membatalkan saat tombol Batal diklik", () => {
+    render(
+      <QuestionBankManager
+        exam={mockExam}
+        questions={mockQuestions}
+        sessionCount={0}
+      />
+    );
+
+    const resetBtn = screen.getByRole("button", { name: /Reset Soal/i });
+    expect(resetBtn).toBeEnabled();
+
+    fireEvent.click(resetBtn);
+
+    expect(screen.getByText("Konfirmasi Reset Semua Soal")).toBeInTheDocument();
+    expect(screen.getByText(/1 butir soal/i)).toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole("button", { name: "Batal" }));
+    expect(screen.queryByText("Konfirmasi Reset Semua Soal")).not.toBeInTheDocument();
+    expect(mockResetQuestionsAction).not.toHaveBeenCalled();
+  });
+
+  it("memanggil resetQuestionsAction saat dialog konfirmasi disetujui dan merefresh router", async () => {
+    render(
+      <QuestionBankManager
+        exam={mockExam}
+        questions={mockQuestions}
+        sessionCount={0}
+      />
+    );
+
+    fireEvent.click(screen.getByRole("button", { name: /Reset Soal/i }));
+    fireEvent.click(screen.getByRole("button", { name: /Ya, Reset Semua Soal/i }));
+
+    await waitFor(() => {
+      expect(mockResetQuestionsAction).toHaveBeenCalledWith("exam-99");
+      expect(mockRefresh).toHaveBeenCalledTimes(1);
+    });
+  });
+
+  it("menonaktifkan tombol Reset Soal dan menampilkan pesan penguncian jika sudah ada peserta ujian (sessionCount > 0)", () => {
+    render(
+      <QuestionBankManager
+        exam={mockExam}
+        questions={mockQuestions}
+        sessionCount={3}
+      />
+    );
+
+    const resetBtn = screen.getByRole("button", { name: /Reset Soal/i });
+    expect(resetBtn).toBeDisabled();
+    expect(screen.getByText(/3 peserta/i)).toBeInTheDocument();
+
+    fireEvent.click(resetBtn);
+    expect(screen.queryByText("Konfirmasi Reset Semua Soal")).not.toBeInTheDocument();
+  });
+
+  it("menampilkan pesan galat di dalam dialog apabila server menolak proses reset", async () => {
+    mockResetQuestionsAction.mockResolvedValueOnce({
+      success: false,
+      message: "Reset soal tidak dapat dilakukan karena sudah ada 1 peserta yang mengikuti ujian ini.",
+    });
+
+    render(
+      <QuestionBankManager
+        exam={mockExam}
+        questions={mockQuestions}
+        sessionCount={0}
+      />
+    );
+
+    fireEvent.click(screen.getByRole("button", { name: /Reset Soal/i }));
+    fireEvent.click(screen.getByRole("button", { name: /Ya, Reset Semua Soal/i }));
+
+    await waitFor(() => {
+      expect(
+        screen.getByText(
+          "Reset soal tidak dapat dilakukan karena sudah ada 1 peserta yang mengikuti ujian ini."
+        )
+      ).toBeInTheDocument();
+    });
+    expect(screen.getByText("Konfirmasi Reset Semua Soal")).toBeInTheDocument();
   });
 });
 

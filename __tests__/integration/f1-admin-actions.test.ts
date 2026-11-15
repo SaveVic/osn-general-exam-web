@@ -1,7 +1,11 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { loginAdmin, logoutAdmin } from "@/actions/auth";
 import { createExamAction, togglePublishAction } from "@/actions/exams";
-import { createQuestionAction, deleteQuestionAction } from "@/actions/questions";
+import {
+  createQuestionAction,
+  deleteQuestionAction,
+  resetQuestionsAction,
+} from "@/actions/questions";
 import { uploadExamAssetAction } from "@/actions/storage";
 import { createReferralCodeAction } from "@/actions/referral-codes";
 
@@ -213,6 +217,82 @@ describe("F1-02 & F1-03: Integrasi Manajemen Ujian & Bank Soal (actions/exams.ts
     expect(res.success).toBe(true);
     expect(mockUpdate).toHaveBeenCalledWith({ order_index: 2 });
     expect(mockUpdateEq).toHaveBeenCalledWith("id", "q-c");
+  });
+
+  it("resetQuestionsAction menolak permintaan apabila admin belum terautentikasi", async () => {
+    mockGetUser.mockResolvedValueOnce({ data: { user: null } });
+
+    const res = await resetQuestionsAction("exam-1");
+
+    expect(res.success).toBe(false);
+    expect(res.message).toContain("Akses ditolak");
+    expect(mockFrom).not.toHaveBeenCalled();
+  });
+
+  it("resetQuestionsAction memblokir reset jika sudah ada peserta yang melakukan ujian", async () => {
+    mockGetUser.mockResolvedValueOnce({ data: { user: { id: "admin-1" } } });
+
+    // Mock count exam_sessions = 2
+    mockFrom.mockReturnValueOnce({
+      select: vi.fn(() => ({
+        eq: vi.fn().mockResolvedValueOnce({ count: 2, error: null }),
+      })),
+    });
+
+    const res = await resetQuestionsAction("exam-1");
+
+    expect(res.success).toBe(false);
+    expect(res.message).toContain("sudah ada 2 peserta yang mengikuti ujian ini");
+    expect(mockFrom).toHaveBeenCalledTimes(1);
+    expect(mockFrom).toHaveBeenCalledWith("exam_sessions");
+  });
+
+  it("resetQuestionsAction menolak reset secara fail-closed apabila pengecekan sesi error", async () => {
+    mockGetUser.mockResolvedValueOnce({ data: { user: { id: "admin-1" } } });
+
+    mockFrom.mockReturnValueOnce({
+      select: vi.fn(() => ({
+        eq: vi.fn().mockResolvedValueOnce({
+          count: null,
+          error: { message: "Connection timeout" },
+        }),
+      })),
+    });
+
+    const res = await resetQuestionsAction("exam-1");
+
+    expect(res.success).toBe(false);
+    expect(res.message).toContain("Gagal memverifikasi status peserta ujian");
+    expect(mockFrom).toHaveBeenCalledTimes(1);
+  });
+
+  it("resetQuestionsAction menghapus seluruh soal jika belum ada peserta ujian (0 sesi)", async () => {
+    mockGetUser.mockResolvedValueOnce({ data: { user: { id: "admin-1" } } });
+
+    // 1. Mock count exam_sessions = 0
+    mockFrom.mockReturnValueOnce({
+      select: vi.fn(() => ({
+        eq: vi.fn().mockResolvedValueOnce({ count: 0, error: null }),
+      })),
+    });
+
+    // 2. Mock delete questions where exam_id = exam-1
+    const mockDeleteEq = vi.fn().mockResolvedValueOnce({ error: null });
+    mockFrom.mockReturnValueOnce({
+      delete: vi.fn(() => ({
+        eq: mockDeleteEq,
+      })),
+    });
+
+    const res = await resetQuestionsAction("exam-1");
+
+    expect(res.success).toBe(true);
+    expect(res.message).toBe("Seluruh butir soal berhasil direset.");
+    expect(mockFrom).toHaveBeenNthCalledWith(1, "exam_sessions");
+    expect(mockFrom).toHaveBeenNthCalledWith(2, "questions");
+    expect(mockDeleteEq).toHaveBeenCalledWith("exam_id", "exam-1");
+    expect(mockRevalidatePath).toHaveBeenCalledWith("/admin/ujian/exam-1/soal");
+    expect(mockRevalidatePath).toHaveBeenCalledWith("/admin/dasbor");
   });
 });
 

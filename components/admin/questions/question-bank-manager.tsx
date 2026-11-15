@@ -10,9 +10,14 @@ import { useRouter } from "next/navigation";
 interface QuestionBankManagerProps {
   exam: ExamRow;
   questions: QuestionRow[];
+  sessionCount?: number;
 }
 
-export function QuestionBankManager({ exam, questions }: QuestionBankManagerProps) {
+export function QuestionBankManager({
+  exam,
+  questions,
+  sessionCount = 0,
+}: QuestionBankManagerProps) {
   const router = useRouter();
   const [activeEditor, setActiveEditor] = useState<boolean>(false);
   const [editingQuestion, setEditingQuestion] = useState<QuestionRow | null>(null);
@@ -111,8 +116,10 @@ export function QuestionBankManager({ exam, questions }: QuestionBankManagerProp
         <QuestionList
           examId={exam.id}
           questions={questions}
+          sessionCount={sessionCount}
           onAddQuestion={handleStartAdd}
           onEditQuestion={handleStartEdit}
+          onResetSuccess={() => router.refresh()}
         />
       )}
     </div>

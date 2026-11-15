@@ -1,5 +1,6 @@
 "use server";
 
+import { getAdminUser } from "@/actions/auth";
 import { createClient } from "@/lib/supabase/server";
 import { questionInputSchema, type QuestionInput } from "@/lib/validations/question";
 import type { QuestionRow } from "@/types/database";
@@ -303,4 +304,91 @@ export async function duplicateQuestionAction(
     data: data as QuestionRow,
   };
 }
+
+/**
+ * Menghitung jumlah sesi peserta pada naskah ujian tertentu
+ */
+export async function getExamSessionCount(examId: string): Promise<number> {
+  const supabase = await createClient();
+
+  const { count, error } = await supabase
+    .from("exam_sessions")
+    .select("id", { count: "exact", head: true })
+    .eq("exam_id", examId);
+
+  if (error) {
+    console.error("Gagal memeriksa jumlah sesi ujian:", error.message);
+    return 0;
+  }
+
+  return count ?? 0;
+}
+
+/**
+ * Menghapus seluruh butir soal pada naskah ujian (Reset Bank Soal).
+ * Ditolak apabila sudah terdapat peserta yang mengikuti ujian (exam_sessions > 0).
+ */
+export async function resetQuestionsAction(
+  examId: string
+): Promise<QuestionActionState> {
+  const user = await getAdminUser();
+  if (!user) {
+    return {
+      success: false,
+      message: "Akses ditolak. Silakan masuk kembali sebagai administrator.",
+    };
+  }
+
+  if (!examId) {
+    return {
+      success: false,
+      message: "ID naskah ujian tidak valid.",
+    };
+  }
+
+  const supabase = await createClient();
+
+  // Pastikan belum ada peserta yang mengikuti ujian ini (fail-closed jika query error)
+  const { count: sessionCount, error: sessionError } = await supabase
+    .from("exam_sessions")
+    .select("id", { count: "exact", head: true })
+    .eq("exam_id", examId);
+
+  if (sessionError) {
+    console.error("Gagal memverifikasi sesi peserta sebelum reset:", sessionError.message);
+    return {
+      success: false,
+      message: `Gagal memverifikasi status peserta ujian: ${sessionError.message}`,
+    };
+  }
+
+  if ((sessionCount ?? 0) > 0) {
+    return {
+      success: false,
+      message: `Reset soal tidak dapat dilakukan karena sudah ada ${sessionCount} peserta yang mengikuti ujian ini.`,
+    };
+  }
+
+  const { error: deleteError } = await supabase
+    .from("questions")
+    .delete()
+    .eq("exam_id", examId);
+
+  if (deleteError) {
+    console.error("Gagal mereset seluruh butir soal:", deleteError.message);
+    return {
+      success: false,
+      message: `Gagal mereset butir soal: ${deleteError.message}`,
+    };
+  }
+
+  revalidatePath(`/admin/ujian/${examId}/soal`);
+  revalidatePath("/admin/dasbor");
+
+  return {
+    success: true,
+    message: "Seluruh butir soal berhasil direset.",
+  };
+}
+
 

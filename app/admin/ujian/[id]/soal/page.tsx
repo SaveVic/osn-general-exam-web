@@ -1,6 +1,6 @@
 import { getAdminUser } from "@/actions/auth";
 import { getExamById } from "@/actions/exams";
-import { getExamQuestions } from "@/actions/questions";
+import { getExamQuestions, getExamSessionCount } from "@/actions/questions";
 import { QuestionBankManager } from "@/components/admin/questions/question-bank-manager";
 import type { Metadata } from "next";
 import { notFound, redirect } from "next/navigation";
@@ -34,11 +34,18 @@ export default async function ExamQuestionsPage({ params }: ExamQuestionsPagePro
     notFound();
   }
 
-  const questions = await getExamQuestions(id);
+  const [questions, sessionCount] = await Promise.all([
+    getExamQuestions(id),
+    getExamSessionCount(id),
+  ]);
 
   return (
     <div className="space-y-6">
-      <QuestionBankManager exam={exam} questions={questions} />
+      <QuestionBankManager
+        exam={exam}
+        questions={questions}
+        sessionCount={sessionCount}
+      />
     </div>
   );
 }
