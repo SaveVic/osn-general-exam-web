@@ -2,9 +2,11 @@
 
 import { createServiceClient } from "@/lib/supabase/admin";
 import { getAdminUser } from "@/actions/auth";
-import { roundToTwoDecimals } from "@/lib/exam/scoring";
+import { evaluateQuestionAnswer, roundToTwoDecimals } from "@/lib/exam/scoring";
 import {
+  determineAnswerStatus,
   formatAnswerForCsv,
+  type AnswerCorrectnessStatus,
   type ExamReportSessionRow,
   type StudentFullAnswerRow,
 } from "@/lib/exam/report-csv";
@@ -348,10 +350,10 @@ export async function getExamFullAnswersReportAction(
       .eq("id", examId)
       .single();
 
-    // 2. Ambil daftar soal terurut
+    // 2. Ambil daftar soal terurut beserta kunci & poin
     const { data: questionsData, error: questionsError } = await supabase
       .from("questions")
-      .select("id, order_index, question_type, options")
+      .select("id, order_index, question_type, options, correct_answer, points")
       .eq("exam_id", examId)
       .order("order_index", { ascending: true });
 
@@ -362,11 +364,12 @@ export async function getExamFullAnswersReportAction(
       };
     }
 
-    // 3. Ambil seluruh sesi peserta
+    // 3. Ambil seluruh sesi peserta yang telah menyelesaikan ujian
     const { data: sessionsData, error: sessionsError } = await supabase
       .from("exam_sessions")
-      .select("id, student_name, student_class, total_score, is_completed")
+      .select("id, student_name, student_class, started_at, submitted_at, total_score, is_completed")
       .eq("exam_id", examId)
+      .eq("is_completed", true)
       .order("started_at", { ascending: true });
 
     if (sessionsError || !sessionsData) {
@@ -376,14 +379,21 @@ export async function getExamFullAnswersReportAction(
       };
     }
 
-    // 4. Ambil seluruh jawaban untuk seluruh sesi sekaligus
-    const sessionIds = sessionsData.map((s) => s.id);
-    let answersData: Array<{ session_id: string; question_id: string; answer_value: unknown }> = [];
+    const completedSessions = sessionsData.filter((s) => Boolean(s.is_completed));
+
+    // 4. Ambil seluruh jawaban & skor untuk sesi selesai sekaligus
+    const sessionIds = completedSessions.map((s) => s.id);
+    let answersData: Array<{
+      session_id: string;
+      question_id: string;
+      answer_value: unknown;
+      awarded_score?: number | null;
+    }> = [];
 
     if (sessionIds.length > 0) {
       const { data: answers } = await supabase
         .from("session_answers")
-        .select("session_id, question_id, answer_value")
+        .select("session_id, question_id, answer_value, awarded_score")
         .in("session_id", sessionIds);
       if (answers) {
         answersData = answers;
@@ -391,36 +401,72 @@ export async function getExamFullAnswersReportAction(
     }
 
     // Petakan jawaban per session_id dan question_id
-    const answersBySession = new Map<string, Map<string, unknown>>();
+    const answersBySession = new Map<
+      string,
+      Map<string, { answer_value: unknown; awarded_score: number | null }>
+    >();
     for (const ans of answersData) {
       if (!answersBySession.has(ans.session_id)) {
         answersBySession.set(ans.session_id, new Map());
       }
-      answersBySession.get(ans.session_id)!.set(ans.question_id, ans.answer_value);
+      answersBySession.get(ans.session_id)!.set(ans.question_id, {
+        answer_value: ans.answer_value,
+        awarded_score:
+          ans.awarded_score !== undefined && ans.awarded_score !== null
+            ? Number(ans.awarded_score)
+            : null,
+      });
     }
 
-    const rows: StudentFullAnswerRow[] = sessionsData.map((session) => {
+    const rows: StudentFullAnswerRow[] = completedSessions.map((session) => {
       const sessionMap = answersBySession.get(session.id);
       const answers: Record<number, string> = {};
+      const answerStatuses: Record<number, AnswerCorrectnessStatus> = {};
 
       questionsData.forEach((q, idx) => {
         const orderNumber = idx + 1;
-        const rawAns = sessionMap ? sessionMap.get(q.id) : null;
-        answers[orderNumber] = formatAnswerForCsv(
+        const entry = sessionMap ? sessionMap.get(q.id) : undefined;
+        const rawAns = entry ? entry.answer_value : null;
+        const awardedScore = entry ? entry.awarded_score : null;
+
+        const formattedAns = formatAnswerForCsv(
           q.question_type,
           q.options,
           rawAns,
           false
         );
+        answers[orderNumber] = formattedAns;
+
+        let fallbackIsCorrect: boolean | undefined;
+        if (formattedAns !== "-" && awardedScore === null && q.correct_answer !== undefined) {
+          const evalPoints = Number(q.points) > 0 ? Number(q.points) : 1;
+          fallbackIsCorrect =
+            evaluateQuestionAnswer(
+              q.question_type,
+              rawAns,
+              q.correct_answer,
+              evalPoints
+            ) > 0;
+        }
+
+        answerStatuses[orderNumber] = determineAnswerStatus(
+          formattedAns,
+          awardedScore,
+          fallbackIsCorrect
+        );
       });
 
       return {
+        sessionId: session.id,
         studentName: session.student_name,
         studentClass: session.student_class,
+        startedAt: session.started_at,
+        submittedAt: session.submitted_at ?? null,
         totalScore:
           session.total_score !== null ? Number(session.total_score) : null,
         isCompleted: Boolean(session.is_completed),
         answers,
+        answerStatuses,
       };
     });
 

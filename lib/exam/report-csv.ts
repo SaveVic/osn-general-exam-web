@@ -8,6 +8,48 @@ export interface ExamReportSessionRow {
   isCompleted: boolean;
 }
 
+export type AnswerCorrectnessStatus = "Benar" | "Salah" | "Tidak Dijawab";
+
+export type ExportHeaderFormat = "normal" | "snake_case";
+
+export interface ExportReportOptions {
+  includeStartedAt: boolean;
+  includeSubmittedAt: boolean;
+  includeAnswersPerQuestion: boolean;
+  includeStatusPerQuestion: boolean;
+  headerFormat?: ExportHeaderFormat;
+}
+
+export interface CustomizableExamReportRow {
+  sessionId: string;
+  studentName: string;
+  studentClass: string;
+  startedAt: string;
+  submittedAt: string | null;
+  totalScore: number | null;
+  isCompleted: boolean;
+  answers?: Record<number, string>;
+  answerStatuses?: Record<number, AnswerCorrectnessStatus>;
+}
+
+/**
+ * Menghitung durasi pengerjaan aktual dalam satuan detik.
+ * Mengembalikan null jika sesi belum diselesaikan (submittedAt === null) atau tanggal tidak valid.
+ */
+export function calculateDurationSeconds(
+  startedAt: string,
+  submittedAt: string | null
+): number | null {
+  if (!submittedAt) return null;
+
+  const startMs = new Date(startedAt).getTime();
+  const endMs = new Date(submittedAt).getTime();
+
+  if (isNaN(startMs) || isNaN(endMs)) return null;
+
+  return Math.max(0, Math.floor((endMs - startMs) / 1000));
+}
+
 /**
  * Menghitung durasi pengerjaan aktual dari selisih started_at dan submitted_at.
  * Mengembalikan "-" jika sesi belum diselesaikan (submittedAt === null).
@@ -16,14 +58,9 @@ export function formatActualDuration(
   startedAt: string,
   submittedAt: string | null
 ): string {
-  if (!submittedAt) return "-";
+  const diffSeconds = calculateDurationSeconds(startedAt, submittedAt);
+  if (diffSeconds === null) return "-";
 
-  const startMs = new Date(startedAt).getTime();
-  const endMs = new Date(submittedAt).getTime();
-
-  if (isNaN(startMs) || isNaN(endMs)) return "-";
-
-  const diffSeconds = Math.max(0, Math.floor((endMs - startMs) / 1000));
   const hours = Math.floor(diffSeconds / 3600);
   const minutes = Math.floor((diffSeconds % 3600) / 60);
   const seconds = diffSeconds % 60;
@@ -116,11 +153,35 @@ export function generateExamReportCsv(rows: ExamReportSessionRow[]): string {
 }
 
 export interface StudentFullAnswerRow {
+  sessionId?: string;
   studentName: string;
   studentClass: string;
+  startedAt?: string;
+  submittedAt?: string | null;
   totalScore: number | null;
   isCompleted: boolean;
   answers: Record<number, string>; // orderIndex (1-indexed) -> formatted string
+  answerStatuses?: Record<number, AnswerCorrectnessStatus>;
+}
+
+/**
+ * Menentukan status kebenaran jawaban untuk satu butir soal.
+ */
+export function determineAnswerStatus(
+  formattedStudentAnswer: string,
+  awardedScore: number | null | undefined,
+  fallbackIsCorrect?: boolean
+): AnswerCorrectnessStatus {
+  const trimmed = formattedStudentAnswer.trim();
+  if (!trimmed || trimmed === "-") {
+    return "Tidak Dijawab";
+  }
+
+  if (awardedScore !== null && awardedScore !== undefined) {
+    return awardedScore > 0 ? "Benar" : "Salah";
+  }
+
+  return fallbackIsCorrect ? "Benar" : "Salah";
 }
 
 /**
@@ -279,6 +340,114 @@ export function generateExamFullAnswersCsv(
 
     const allCells = [...baseCells, ...answerCells];
     return allCells.map((cell) => escapeCsvCell(cell)).join(",");
+  });
+
+  const csvBody = [headerLine, ...dataLines].join("\r\n");
+  return `\uFEFF${csvBody}`;
+}
+
+const REPORT_HEADER_LABELS: Record<
+  ExportHeaderFormat,
+  {
+    order: string;
+    studentName: string;
+    studentClass: string;
+    startedAt: string;
+    submittedAt: string;
+    durationSeconds: string;
+    totalScore: string;
+    questionAnswer: (num: number) => string;
+    questionStatus: (num: number) => string;
+  }
+> = {
+  normal: {
+    order: "Nomor Urut",
+    studentName: "Nama Lengkap",
+    studentClass: "Kelas",
+    startedAt: "Waktu Mulai",
+    submittedAt: "Waktu Selesai",
+    durationSeconds: "Durasi (Detik)",
+    totalScore: "Total Skor",
+    questionAnswer: (num) => `Jawaban No. ${num}`,
+    questionStatus: (num) => `Status No. ${num}`,
+  },
+  snake_case: {
+    order: "nomor_urut",
+    studentName: "nama_lengkap",
+    studentClass: "kelas",
+    startedAt: "waktu_mulai",
+    submittedAt: "waktu_selesai",
+    durationSeconds: "durasi_detik",
+    totalScore: "total_skor",
+    questionAnswer: (num) => `jawaban_no_${num}`,
+    questionStatus: (num) => `status_no_${num}`,
+  },
+};
+
+/**
+ * Menghasilkan CSV rekapitulasi nilai yang dapat dikustomisasi (UTF-8 BOM, RFC 4180).
+ * Hanya mengekspor peserta yang telah menyelesaikan ujian (isCompleted === true)
+ * tanpa menyertakan kolom status pengerjaan, dengan durasi wajib dalam satuan detik.
+ */
+export function generateCustomizableExamReportCsv(
+  rows: CustomizableExamReportRow[],
+  options: ExportReportOptions,
+  questionsCount: number = 0
+): string {
+  const format: ExportHeaderFormat = options.headerFormat ?? "normal";
+  const labels = REPORT_HEADER_LABELS[format];
+  const completedRows = rows.filter((row) => row.isCompleted);
+
+  const headers: string[] = [
+    labels.order,
+    labels.studentName,
+    labels.studentClass,
+  ];
+  if (options.includeStartedAt) headers.push(labels.startedAt);
+  if (options.includeSubmittedAt) headers.push(labels.submittedAt);
+  headers.push(labels.durationSeconds, labels.totalScore);
+
+  if (options.includeAnswersPerQuestion || options.includeStatusPerQuestion) {
+    for (let i = 1; i <= questionsCount; i++) {
+      if (options.includeAnswersPerQuestion) headers.push(labels.questionAnswer(i));
+      if (options.includeStatusPerQuestion) headers.push(labels.questionStatus(i));
+    }
+  }
+
+  const headerLine = headers.map((h) => escapeCsvCell(h)).join(",");
+
+  const dataLines = completedRows.map((row, index) => {
+    const durationSec = calculateDurationSeconds(row.startedAt, row.submittedAt);
+    const cells: Array<string | number | null | undefined> = [
+      index + 1,
+      row.studentName,
+      row.studentClass,
+    ];
+
+    if (options.includeStartedAt) {
+      cells.push(formatReportTimestamp(row.startedAt));
+    }
+    if (options.includeSubmittedAt) {
+      cells.push(formatReportTimestamp(row.submittedAt));
+    }
+
+    cells.push(durationSec !== null ? durationSec : "-");
+    cells.push(
+      row.totalScore !== null && row.totalScore !== undefined ? row.totalScore : "-"
+    );
+
+    if (options.includeAnswersPerQuestion || options.includeStatusPerQuestion) {
+      for (let i = 1; i <= questionsCount; i++) {
+        if (options.includeAnswersPerQuestion) {
+          cells.push(row.answers?.[i] ?? "-");
+        }
+        if (options.includeStatusPerQuestion) {
+          cells.push(row.answerStatuses?.[i] ?? "Tidak Dijawab");
+        }
+      }
+    }
+
+    return cells.map((cell) => escapeCsvCell(cell)).join(",");
   });
 
   const csvBody = [headerLine, ...dataLines].join("\r\n");

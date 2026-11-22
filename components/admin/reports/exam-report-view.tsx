@@ -5,11 +5,13 @@ import type { ExamRow } from "@/types/database";
 import {
   formatActualDuration,
   formatReportTimestamp,
-  generateExamReportCsv,
-  generateExamFullAnswersCsv,
+  generateCustomizableExamReportCsv,
+  type CustomizableExamReportRow,
   type ExamReportSessionRow,
+  type ExportReportOptions,
 } from "@/lib/exam/report-csv";
 import { getExamFullAnswersReportAction } from "@/actions/exam-report";
+import { ExportReportDialog } from "@/components/admin/reports/export-report-dialog";
 import { SessionAnswersDetailDialog } from "@/components/admin/reports/session-answers-detail-dialog";
 import { DataTablePagination } from "@/components/admin/data-table-pagination";
 import { Button } from "@/components/ui/button";
@@ -25,8 +27,6 @@ import {
   Award,
   FileSpreadsheet,
   Eye,
-  Loader2,
-  TableProperties,
 } from "lucide-react";
 
 interface ExamReportViewProps {
@@ -45,7 +45,9 @@ export function ExamReportView({
   const [selectedClass, setSelectedClass] = useState<string>("all");
   const [searchQuery, setSearchQuery] = useState<string>("");
   const [selectedSessionDetailId, setSelectedSessionDetailId] = useState<string | null>(null);
-  const [isExportingFull, setIsExportingFull] = useState<boolean>(false);
+  const [exportDialogOpen, setExportDialogOpen] = useState<boolean>(false);
+  const [isExporting, setIsExporting] = useState<boolean>(false);
+  const [exportError, setExportError] = useState<string | null>(null);
 
   // Gabungkan daftar opsi kelas dari konfigurasi ujian dan sesi aktual
   const availableClasses = useMemo(() => {
@@ -116,15 +118,14 @@ export function ExamReportView({
     return { total, completed, inProgress, avgScore };
   }, [sessions]);
 
-  // Handler unduh berkas CSV UTF-8
-  const handleExportCsv = () => {
-    const csvContent = generateExamReportCsv(filteredSessions);
-    const safeSlug = exam.title
-      .toLowerCase()
-      .replace(/[^a-z0-9]+/g, "-")
-      .replace(/(^-|-$)/g, "");
-    const filename = `rekap-nilai-${safeSlug || exam.id}.csv`;
+  // Filter khusus sesi yang telah menyelesaikan ujian untuk ekspor nilai
+  const completedFilteredSessions = useMemo(
+    () => filteredSessions.filter((s) => s.isCompleted),
+    [filteredSessions]
+  );
 
+  // Trigger unduh berkas CSV di browser atau callback pengujian
+  const triggerCsvDownload = (csvContent: string, filename: string) => {
     if (onExportCsv) {
       onExportCsv(csvContent, filename);
       return;
@@ -150,54 +151,82 @@ export function ExamReportView({
     }
   };
 
-  // Handler unduh berkas CSV Jawaban Lengkap Seluruh Siswa
-  const handleExportFullAnswersCsv = async () => {
-    setIsExportingFull(true);
+  // Handler ekspor CSV berdasarkan kustomisasi kolom yang dipilih admin
+  const handleConfirmExport = async (options: ExportReportOptions) => {
+    setExportError(null);
+    const safeSlug = exam.title
+      .toLowerCase()
+      .replace(/[^a-z0-9]+/g, "-")
+      .replace(/(^-|-$)/g, "");
+    const filename = `rekap-nilai-${safeSlug || exam.id}.csv`;
+
+    const needsQuestionDetails =
+      options.includeAnswersPerQuestion || options.includeStatusPerQuestion;
+
+    if (!needsQuestionDetails) {
+      const rows: CustomizableExamReportRow[] = completedFilteredSessions.map((s) => ({
+        sessionId: s.id,
+        studentName: s.studentName,
+        studentClass: s.studentClass,
+        startedAt: s.startedAt,
+        submittedAt: s.submittedAt,
+        totalScore: s.totalScore,
+        isCompleted: s.isCompleted,
+      }));
+      const csvContent = generateCustomizableExamReportCsv(rows, options, 0);
+      triggerCsvDownload(csvContent, filename);
+      setExportDialogOpen(false);
+      return;
+    }
+
+    setIsExporting(true);
     try {
       const res = await getExamFullAnswersReportAction(exam.id);
-      if (res.success && res.rows && res.questionsCount !== undefined) {
-        // Filter baris sesuai filter aktif pada tabel
-        const targetRows = res.rows.filter((r) => {
-          return filteredSessions.some(
-            (s) => s.studentName === r.studentName && s.studentClass === r.studentClass
-          );
-        });
-
-        const csvContent = generateExamFullAnswersCsv(res.questionsCount, targetRows);
-        const safeSlug = exam.title
-          .toLowerCase()
-          .replace(/[^a-z0-9]+/g, "-")
-          .replace(/(^-|-$)/g, "");
-        const filename = `jawaban-lengkap-${safeSlug || exam.id}.csv`;
-
-        if (onExportCsv) {
-          onExportCsv(csvContent, filename);
-          return;
-        }
-
-        if (typeof window !== "undefined") {
-          const blob = new Blob([csvContent], {
-            type: "text/csv;charset=utf-8;",
-          });
-
-          if (typeof URL.createObjectURL === "function") {
-            const url = URL.createObjectURL(blob);
-            const link = document.createElement("a");
-            link.href = url;
-            link.setAttribute("download", filename);
-            document.body.appendChild(link);
-            link.click();
-            document.body.removeChild(link);
-            if (typeof URL.revokeObjectURL === "function") {
-              URL.revokeObjectURL(url);
-            }
-          }
-        }
+      if (!res.success || !res.rows || res.questionsCount === undefined) {
+        setExportError(res.message || "Gagal memuat jawaban dan status soal peserta.");
+        return;
       }
+
+      const completedById = new Map(
+        completedFilteredSessions.map((s) => [s.id, s])
+      );
+
+      const matchedRows: CustomizableExamReportRow[] = [];
+      for (const r of res.rows) {
+        if (!r.isCompleted) continue;
+        const matchedSession = r.sessionId
+          ? completedById.get(r.sessionId)
+          : completedFilteredSessions.find(
+              (s) => s.studentName === r.studentName && s.studentClass === r.studentClass
+            );
+
+        if (!matchedSession) continue;
+
+        matchedRows.push({
+          sessionId: matchedSession.id,
+          studentName: r.studentName,
+          studentClass: r.studentClass,
+          startedAt: r.startedAt ?? matchedSession.startedAt,
+          submittedAt: r.submittedAt ?? matchedSession.submittedAt,
+          totalScore: r.totalScore,
+          isCompleted: true,
+          answers: r.answers,
+          answerStatuses: r.answerStatuses,
+        });
+      }
+
+      const csvContent = generateCustomizableExamReportCsv(
+        matchedRows,
+        options,
+        res.questionsCount
+      );
+      triggerCsvDownload(csvContent, filename);
+      setExportDialogOpen(false);
     } catch (err) {
-      console.error("Gagal mengekspor jawaban lengkap:", err);
+      console.error("Gagal mengekspor laporan kustomisasi:", err);
+      setExportError("Terjadi gangguan sistem saat menyiapkan berkas CSV.");
     } finally {
-      setIsExportingFull(false);
+      setIsExporting(false);
     }
   };
 
@@ -281,31 +310,19 @@ export function ExamReportView({
           </div>
         </div>
 
-        {/* Tombol Ekspor Nilai (CSV) & Jawaban Lengkap */}
+        {/* Tombol Ekspor Nilai (CSV) -> Membuka Dialog Kustomisasi */}
         <div className="flex flex-wrap items-center gap-2">
           <Button
             type="button"
-            onClick={handleExportCsv}
-            disabled={filteredSessions.length === 0}
+            onClick={() => {
+              setExportError(null);
+              setExportDialogOpen(true);
+            }}
+            disabled={completedFilteredSessions.length === 0}
             className="h-9 cursor-pointer gap-1.5 bg-emerald-600 text-xs font-semibold text-white hover:bg-emerald-700 dark:bg-emerald-600 dark:hover:bg-emerald-700"
           >
             <Download className="size-3.5" />
             <span>Ekspor Nilai (CSV)</span>
-          </Button>
-
-          <Button
-            type="button"
-            variant="outline"
-            onClick={handleExportFullAnswersCsv}
-            disabled={filteredSessions.length === 0 || isExportingFull}
-            className="h-9 cursor-pointer gap-1.5 border-indigo-200 text-xs font-semibold text-indigo-700 hover:bg-indigo-50 dark:border-indigo-800 dark:text-indigo-300 dark:hover:bg-indigo-950/50"
-          >
-            {isExportingFull ? (
-              <Loader2 className="size-3.5 animate-spin" />
-            ) : (
-              <TableProperties className="size-3.5 text-indigo-600 dark:text-indigo-400" />
-            )}
-            <span>Ekspor Jawaban Lengkap (CSV)</span>
           </Button>
         </div>
       </div>
@@ -431,6 +448,19 @@ export function ExamReportView({
         onOpenChange={(open) => {
           if (!open) setSelectedSessionDetailId(null);
         }}
+      />
+
+      {/* Modal Dialog Kustomisasi Ekspor Nilai CSV */}
+      <ExportReportDialog
+        open={exportDialogOpen}
+        onOpenChange={setExportDialogOpen}
+        completedCount={completedFilteredSessions.length}
+        excludedInProgressCount={
+          filteredSessions.length - completedFilteredSessions.length
+        }
+        isExporting={isExporting}
+        errorMessage={exportError}
+        onConfirmExport={handleConfirmExport}
       />
     </div>
   );

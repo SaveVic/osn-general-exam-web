@@ -219,6 +219,27 @@ describe("Admin Exam Refinements Integration", () => {
                         { id: "o1", label: "2" },
                         { id: "o2", label: "3" },
                       ],
+                      correct_answer: { selected: "o1" },
+                      points: 10,
+                    },
+                    {
+                      id: "q2",
+                      order_index: 2,
+                      question_type: "single_choice",
+                      options: [
+                        { id: "o1", label: "X" },
+                        { id: "o2", label: "Y" },
+                      ],
+                      correct_answer: { selected: "o2" },
+                      points: 10,
+                    },
+                    {
+                      id: "q3",
+                      order_index: 3,
+                      question_type: "short_answer",
+                      options: [],
+                      correct_answer: { text: "42" },
+                      points: 10,
                     },
                   ],
                   error: null,
@@ -231,19 +252,21 @@ describe("Admin Exam Refinements Integration", () => {
           return {
             select: () => ({
               eq: () => ({
-                order: vi.fn().mockResolvedValue({
-                  data: [
-                    {
-                      id: "sess-1",
-                      student_name: "Ali Imron",
-                      student_class: "12-MIPA-1",
-                      started_at: "2026-10-21T08:00:00.000Z",
-                      submitted_at: "2026-10-21T09:00:00.000Z",
-                      total_score: 100,
-                      is_completed: true,
-                    },
-                  ],
-                  error: null,
+                eq: () => ({
+                  order: vi.fn().mockResolvedValue({
+                    data: [
+                      {
+                        id: "sess-1",
+                        student_name: "Ali Imron",
+                        student_class: "12-MIPA-1",
+                        started_at: "2026-10-21T08:00:00.000Z",
+                        submitted_at: "2026-10-21T09:00:00.000Z",
+                        total_score: 10,
+                        is_completed: true,
+                      },
+                    ],
+                    error: null,
+                  }),
                 }),
               }),
             }),
@@ -258,6 +281,13 @@ describe("Admin Exam Refinements Integration", () => {
                     session_id: "sess-1",
                     question_id: "q1",
                     answer_value: "o1",
+                    awarded_score: 10,
+                  },
+                  {
+                    session_id: "sess-1",
+                    question_id: "q2",
+                    answer_value: "o1",
+                    awarded_score: 0,
                   },
                 ],
                 error: null,
@@ -270,9 +300,15 @@ describe("Admin Exam Refinements Integration", () => {
 
       const res = await getExamFullAnswersReportAction("exam-1");
       expect(res.success).toBe(true);
-      expect(res.questionsCount).toBe(1);
+      expect(res.questionsCount).toBe(3);
       expect(res.rows).toHaveLength(1);
+      expect(res.rows?.[0].sessionId).toBe("sess-1");
       expect(res.rows?.[0].answers[1]).toBe("A");
+      expect(res.rows?.[0].answers[2]).toBe("A");
+      expect(res.rows?.[0].answers[3]).toBe("-");
+      expect(res.rows?.[0].answerStatuses?.[1]).toBe("Benar");
+      expect(res.rows?.[0].answerStatuses?.[2]).toBe("Salah");
+      expect(res.rows?.[0].answerStatuses?.[3]).toBe("Tidak Dijawab");
     });
   });
 

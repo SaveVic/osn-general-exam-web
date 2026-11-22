@@ -230,7 +230,7 @@ describe("Fitur Paginasi Tabel Admin (DataTablePagination)", () => {
       expect(screen.getByTestId("pagination-page-info")).toHaveTextContent("Halaman 1 dari 1");
     });
 
-    it("tetap mengekspor seluruh data yang sesuai filter (bukan hanya halaman aktif) saat tombol ekspor CSV diklik", () => {
+    it("tetap mengekspor seluruh peserta selesai yang sesuai filter (bukan hanya halaman aktif) melalui dialog ekspor CSV", () => {
       const mockExportCsv = vi.fn();
 
       render(
@@ -245,12 +245,19 @@ describe("Fitur Paginasi Tabel Admin (DataTablePagination)", () => {
       const exportBtn = screen.getByRole("button", { name: /Ekspor Nilai \(CSV\)/i });
       fireEvent.click(exportBtn);
 
+      const confirmDownloadBtn = screen.getByRole("button", {
+        name: /Unduh CSV \(40 Peserta\)/i,
+      });
+      fireEvent.click(confirmDownloadBtn);
+
       expect(mockExportCsv).toHaveBeenCalled();
       const csvContent = mockExportCsv.mock.calls[0][0];
 
-      // Baris pertama dan baris terakhir (ke-60) harus ada dalam CSV meski yang terlihat di layar hanya 25
+      // Seluruh peserta selesai (Siswa Ke-01 s.d. Ke-40) diekspor meski layar hanya menampilkan 25 baris
       expect(csvContent).toContain("Siswa Ke-01");
-      expect(csvContent).toContain("Siswa Ke-60");
+      expect(csvContent).toContain("Siswa Ke-40");
+      // Peserta yang belum selesai (Siswa Ke-60) otomatis dikecualikan
+      expect(csvContent).not.toContain("Siswa Ke-60");
     });
   });
 

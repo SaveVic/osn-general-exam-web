@@ -1,10 +1,14 @@
 import { describe, it, expect } from "vitest";
 import {
+  calculateDurationSeconds,
+  determineAnswerStatus,
   formatActualDuration,
   formatReportTimestamp,
   escapeCsvCell,
+  generateCustomizableExamReportCsv,
   generateExamReportCsv,
   EXAM_REPORT_CSV_HEADERS,
+  type CustomizableExamReportRow,
   type ExamReportSessionRow,
 } from "@/lib/exam/report-csv";
 
@@ -108,6 +112,91 @@ describe("Report CSV & Duration Utilities - Unit Tests (F5-03 / ADM-RECP-01)", (
       // Verifikasi baris kedua (Sedang Mengerjakan, nama dengan aksen, kutip, dan koma)
       expect(lines[2]).toContain('2,"Renée ""Putri"" Qur\'ani, Jr.",11-MIPA-2,');
       expect(lines[2]).toContain(",-,-,Sedang Mengerjakan");
+    });
+  });
+
+  describe("calculateDurationSeconds & determineAnswerStatus", () => {
+    it("menghitung selisih waktu dalam satuan detik secara akurat", () => {
+      expect(
+        calculateDurationSeconds("2026-10-20T08:00:00Z", "2026-10-20T08:45:12Z")
+      ).toBe(2712);
+      expect(calculateDurationSeconds("2026-10-20T08:00:00Z", null)).toBeNull();
+    });
+
+    it("menentukan status jawaban Benar, Salah, dan Tidak Dijawab", () => {
+      expect(determineAnswerStatus("-", null)).toBe("Tidak Dijawab");
+      expect(determineAnswerStatus("", 0)).toBe("Tidak Dijawab");
+      expect(determineAnswerStatus("A", 5)).toBe("Benar");
+      expect(determineAnswerStatus("B", 0)).toBe("Salah");
+      expect(determineAnswerStatus("C", null, true)).toBe("Benar");
+      expect(determineAnswerStatus("D", null, false)).toBe("Salah");
+    });
+  });
+
+  describe("generateCustomizableExamReportCsv", () => {
+    const sampleRows: CustomizableExamReportRow[] = [
+      {
+        sessionId: "sess-1",
+        studentName: "Ahmad Syafi'i",
+        studentClass: "11-MIPA-1",
+        startedAt: "2026-10-20T08:00:00.000Z",
+        submittedAt: "2026-10-20T08:10:05.000Z", // 605 detik
+        totalScore: 80,
+        isCompleted: true,
+        answers: { 1: "A", 2: "-", 3: "42" },
+        answerStatuses: { 1: "Benar", 2: "Tidak Dijawab", 3: "Salah" },
+      },
+      {
+        sessionId: "sess-2",
+        studentName: "Belum Selesai",
+        studentClass: "11-MIPA-2",
+        startedAt: "2026-10-20T08:05:00.000Z",
+        submittedAt: null,
+        totalScore: 0,
+        isCompleted: false,
+      },
+    ];
+
+    it("hanya mengekspor peserta selesai dengan kolom wajib (termasuk durasi detik) dan tanpa Status Pengerjaan", () => {
+      const csv = generateCustomizableExamReportCsv(
+        sampleRows,
+        {
+          includeStartedAt: false,
+          includeSubmittedAt: false,
+          includeAnswersPerQuestion: false,
+          includeStatusPerQuestion: false,
+          headerFormat: "normal",
+        },
+        3
+      );
+
+      const lines = csv.slice(1).split("\r\n");
+      expect(lines).toHaveLength(2); // Header + 1 peserta selesai
+      expect(lines[0]).toBe("Nomor Urut,Nama Lengkap,Kelas,Durasi (Detik),Total Skor");
+      expect(lines[1]).toBe("1,Ahmad Syafi'i,11-MIPA-1,605,80");
+      expect(csv).not.toContain("Belum Selesai");
+      expect(csv).not.toContain("Status Pengerjaan");
+    });
+
+    it("menyertakan seluruh kolom opsional saat dicentang dengan format snake_case", () => {
+      const csv = generateCustomizableExamReportCsv(
+        sampleRows,
+        {
+          includeStartedAt: true,
+          includeSubmittedAt: true,
+          includeAnswersPerQuestion: true,
+          includeStatusPerQuestion: true,
+          headerFormat: "snake_case",
+        },
+        3
+      );
+
+      const lines = csv.slice(1).split("\r\n");
+      expect(lines).toHaveLength(2);
+      expect(lines[0]).toBe(
+        "nomor_urut,nama_lengkap,kelas,waktu_mulai,waktu_selesai,durasi_detik,total_skor,jawaban_no_1,status_no_1,jawaban_no_2,status_no_2,jawaban_no_3,status_no_3"
+      );
+      expect(lines[1]).toContain(",605,80,A,Benar,-,Tidak Dijawab,42,Salah");
     });
   });
 });

@@ -1,6 +1,6 @@
 import React from "react";
 import { describe, it, expect, vi, beforeEach } from "vitest";
-import { render, screen, fireEvent } from "@testing-library/react";
+import { render, screen, fireEvent, waitFor } from "@testing-library/react";
 import { getExamReportData } from "@/actions/exam-report";
 import { ExamReportView } from "@/components/admin/reports/exam-report-view";
 import type { ExamReportSessionRow } from "@/lib/exam/report-csv";
@@ -250,7 +250,7 @@ describe("F5-03: Rekapitulasi Nilai & Ekspor Laporan Akademis (ADM-RECP-01)", ()
       expect(screen.queryByText('Budi "Al-Faruq", Jr.')).not.toBeInTheDocument();
     });
 
-    it("menghasilkan dan mengunduh berkas CSV berformat UTF-8 BOM saat tombol Ekspor Nilai (CSV) diklik", () => {
+    it("membuka dialog kustomisasi dan hanya mengekspor peserta selesai dengan durasi detik (tanpa Status Pengerjaan)", () => {
       const handleExportCsv = vi.fn();
 
       render(
@@ -265,21 +265,155 @@ describe("F5-03: Rekapitulasi Nilai & Ekspor Laporan Akademis (ADM-RECP-01)", ()
       const exportButton = screen.getByRole("button", { name: /Ekspor Nilai \(CSV\)/i });
       fireEvent.click(exportButton);
 
+      expect(screen.getByText("Kustomisasi Ekspor Nilai (CSV)")).toBeInTheDocument();
+      // Info 1 peserta belum selesai dikecualikan
+      expect(screen.getByText(/1 peserta/i)).toBeInTheDocument();
+
+      const downloadBtn = screen.getByRole("button", {
+        name: /Unduh CSV \(2 Peserta\)/i,
+      });
+      fireEvent.click(downloadBtn);
+
       expect(handleExportCsv).toHaveBeenCalledTimes(1);
 
       const [csvContent, filename] = handleExportCsv.mock.calls[0] as [string, string];
       expect(filename).toBe("rekap-nilai-simulasi-osn-matematika-sains-2026.csv");
-
-      // Harus diawali UTF-8 BOM agar karakter Indonesia aman di Excel
       expect(csvContent.startsWith("\uFEFF")).toBe(true);
 
-      // Harus memuat header dan karakter khusus yang di-escape RFC 4180
-      expect(csvContent).toContain(
-        "Nomor Urut,Nama Lengkap,Kelas,Waktu Mulai,Waktu Selesai,Durasi Aktual,Skor Total,Status Pengerjaan"
+      const lines = csvContent.slice(1).split("\r\n");
+      expect(lines).toHaveLength(3); // 1 header + 2 peserta selesai (sess-2 belum selesai dilewati)
+      expect(lines[0]).toBe("Nomor Urut,Nama Lengkap,Kelas,Durasi (Detik),Total Skor");
+      expect(lines[1]).toBe("1,Ahmad Syafi'i,10-MIPA-1,4530,87.5");
+      expect(lines[2]).toBe('2,"Budi ""Al-Faruq"", Jr.",10-MIPA-1,3000,95');
+      expect(csvContent).not.toContain("Siti Qur'ani");
+      expect(csvContent).not.toContain("Status Pengerjaan");
+    });
+
+    it("mendukung opsi checkbox lengkap dan format header snake_case pada dialog ekspor CSV", async () => {
+      const handleExportCsv = vi.fn();
+      mockGetAdminUser.mockResolvedValueOnce({ id: "admin-1" });
+
+      mockServiceFrom.mockImplementation((table: string) => {
+        if (table === "exams") {
+          return {
+            select: () => ({
+              eq: () => ({
+                single: vi.fn().mockResolvedValue({
+                  data: { title: mockExam.title },
+                  error: null,
+                }),
+              }),
+            }),
+          };
+        }
+        if (table === "questions") {
+          return {
+            select: () => ({
+              eq: () => ({
+                order: vi.fn().mockResolvedValue({
+                  data: [
+                    {
+                      id: "q1",
+                      order_index: 1,
+                      question_type: "single_choice",
+                      options: [
+                        { id: "A", label: "10" },
+                        { id: "B", label: "20" },
+                      ],
+                      correct_answer: { selected: "A" },
+                      points: 50,
+                    },
+                  ],
+                  error: null,
+                }),
+              }),
+            }),
+          };
+        }
+        if (table === "exam_sessions") {
+          return {
+            select: () => ({
+              eq: () => ({
+                eq: () => ({
+                  order: vi.fn().mockResolvedValue({
+                    data: [
+                      {
+                        id: "sess-1",
+                        student_name: "Ahmad Syafi'i",
+                        student_class: "10-MIPA-1",
+                        started_at: "2026-10-20T08:00:00.000Z",
+                        submitted_at: "2026-10-20T09:15:30.000Z",
+                        total_score: 87.5,
+                        is_completed: true,
+                      },
+                      {
+                        id: "sess-3",
+                        student_name: 'Budi "Al-Faruq", Jr.',
+                        student_class: "10-MIPA-1",
+                        started_at: "2026-10-20T08:10:00.000Z",
+                        submitted_at: "2026-10-20T09:00:00.000Z",
+                        total_score: 95,
+                        is_completed: true,
+                      },
+                    ],
+                    error: null,
+                  }),
+                }),
+              }),
+            }),
+          };
+        }
+        if (table === "session_answers") {
+          return {
+            select: () => ({
+              in: vi.fn().mockResolvedValue({
+                data: [
+                  {
+                    session_id: "sess-1",
+                    question_id: "q1",
+                    answer_value: { selected: "A" },
+                    awarded_score: 50,
+                  },
+                ],
+                error: null,
+              }),
+            }),
+          };
+        }
+        return {};
+      });
+
+      render(
+        <ExamReportView
+          exam={mockExam}
+          maxPossibleScore={100}
+          sessions={mockReportSessions}
+          onExportCsv={handleExportCsv}
+        />
       );
-      expect(csvContent).toContain("Ahmad Syafi'i");
-      expect(csvContent).toContain("Siti Qur'ani");
-      expect(csvContent).toContain('"Budi ""Al-Faruq"", Jr."');
+
+      fireEvent.click(screen.getByRole("button", { name: /Ekspor Nilai \(CSV\)/i }));
+
+      // Centang seluruh kolom opsional & pilih snake_case
+      fireEvent.click(screen.getByLabelText(/Waktu Mulai/i));
+      fireEvent.click(screen.getByLabelText(/Waktu Selesai/i));
+      fireEvent.click(screen.getByLabelText(/^Jawaban Tiap Nomor/i));
+      fireEvent.click(screen.getByLabelText(/Status Jawaban Tiap Nomor/i));
+      fireEvent.click(screen.getByLabelText(/snake_case/i));
+
+      fireEvent.click(screen.getByRole("button", { name: /Unduh CSV \(2 Peserta\)/i }));
+
+      await waitFor(() => {
+        expect(handleExportCsv).toHaveBeenCalledTimes(1);
+      });
+
+      const [csvContent] = handleExportCsv.mock.calls[0] as [string, string];
+      const lines = csvContent.slice(1).split("\r\n");
+      expect(lines[0]).toBe(
+        "nomor_urut,nama_lengkap,kelas,waktu_mulai,waktu_selesai,durasi_detik,total_skor,jawaban_no_1,status_no_1"
+      );
+      expect(lines[1]).toContain(",4530,87.5,A,Benar");
+      expect(lines[2]).toContain(",3000,95,-,Tidak Dijawab");
     });
   });
 });
